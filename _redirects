@@ -1,4 +1,0 @@
-/api/history/*  https://spaia.jp/baseball/npb/api/official_stats_history  200
-/api/schedules/*  https://spaia.jp/baseball/npb/api/schedules  200
-/api/cl/*  https://npb-result.ant-npb.workers.dev/api/cl  200
-/api/pl/*  https://npb-result.ant-npb.workers.dev/api/pl  200
