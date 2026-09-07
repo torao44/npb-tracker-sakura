@@ -1,0 +1,19 @@
+[[redirects]]
+  from = "/api/history/*"
+  to = "https://spaia.jp/baseball/npb/api/official_stats_history"
+  status = 200
+
+[[redirects]]
+  from = "/api/schedules/*"
+  to = "https://spaia.jp/baseball/npb/api/schedules"
+  status = 200
+
+[[redirects]]
+  from = "/api/cl/*"
+  to = "https://npb-result.ant-npb.workers.dev/api/cl"
+  status = 200
+
+[[redirects]]
+  from = "/api/pl/*"
+  to = "https://npb-result.ant-npb.workers.dev/api/pl"
+  status = 200
