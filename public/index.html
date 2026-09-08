@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<meta name="app-version" content="1.1.8">
-<meta name="app-updated" content="2026-09-07">
+<meta name="app-version" content="1.1.9">
+<meta name="app-updated" content="2026-09-08">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%BE%3C/text%3E%3C/svg%3E">
 <title>NPB シーズントラッカー</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -52,7 +52,7 @@ h1{font-family:"Barlow Condensed","Noto Sans JP",sans-serif;font-size:var(--s3);
 .game-team{display:flex;align-items:center;gap:.4rem;font-weight:700}
 .game-info{min-width:7rem;text-align:right;color:var(--muted);font-size:.82rem}
 .game-stadium{font-weight:600;color:var(--blue)}
-.game-pitcher{color:var(--muted)}
+.game-pitcher{color:var(--muted)}.game-source{display:inline-block;margin-left:.35rem;color:var(--ok);font-size:.72rem;font-weight:700}
 .game-status{font-size:.78rem;padding:.15rem .5rem;border-radius:6px;background:var(--surface-2);display:inline-block;margin-top:.2rem}
 .game-status.live{background:#e4f3e9;color:#155b38;font-weight:700}
 .game-status.final{background:#edf0f3;color:#495563}
@@ -135,7 +135,7 @@ footer{max-width:1240px;margin:0 auto;padding:1.2rem var(--space) 2.5rem;color:v
       </div>
       <div class="view" id="upcomingView">
         <div id="upcomingContainer"></div>
-        <p class="legend-note" id="upcomingHelp">今後の対戦予定を表示します。先発投手は公示後に反映されます。</p>
+        <p class="legend-note" id="upcomingHelp">今後の対戦予定を表示します。予告先発はNPB公式の公示後に反映されます。</p>
       </div>
     </section>
   </section>
@@ -173,7 +173,7 @@ footer{max-width:1240px;margin:0 auto;padding:1.2rem var(--space) 2.5rem;color:v
   </section>
 </main>
 <footer>
-  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem"><span>このファイルはブラウザ内にデータを保存します。</span><span style="font-family:ui-monospace,monospace">v1.1.8 (2026-09-07)</span></div><div style="margin-top:.3rem">ページを閉じている間も確実に動収集するには、Cron対応のサーバーまたはCloudflare Worker等への配置が必要です。外部データ提供元の仕様変更・停止時は更新できない場合あります。
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem"><span>このファイルはブラウザ内にデータを保存します。</span><span style="font-family:ui-monospace,monospace">v1.1.9 (2026-09-08)</span></div><div style="margin-top:.3rem">ページを閉じている間も確実に動収集するには、Cron対応のサーバーまたはCloudflare Worker等への配置が必要です。外部データ提供元の仕様変更・停止時は更新できない場合あります。
   </div>
 </footer>
 
@@ -194,6 +194,7 @@ footer{max-width:1240px;margin:0 auto;padding:1.2rem var(--space) 2.5rem;color:v
 const API={
  history:'/api/history',
  schedules:'/api/schedules',
+ starters:'/api/starters',
  central:'/api/cl',
  pacific:'/api/pl'
 };
@@ -268,21 +269,23 @@ async function refreshAll(){
   else{showNotice('サーバー接続エラー','サーバーからの取得に失敗しました。設定タブでURLを確認してください。');return}
  }
  if($('#refreshBtn')){$('#refreshBtn').disabled=true;$('#refreshBtn').textContent='更新中…'}
- setStatus('更新中','warn');addLog(`v1.1.7 ${season}年度のデータ取得を開始`);
+ setStatus('更新中','warn');addLog(`v1.1.9 ${season}年度のデータ取得を開始`);
  let fullHistory=false,success=0;
  try{
-  const [centralHist,pacificHist,schedules]=await Promise.all([
-   fetchLeagueHistory('central'),fetchLeagueHistory('pacific'),fetchJson(`${API.schedules}?Year=${season}`,25000)
+  const [centralHist,pacificHist,schedules,starters]=await Promise.all([
+   fetchLeagueHistory('central'),fetchLeagueHistory('pacific'),fetchJson(`${API.schedules}?Year=${season}`,25000),fetchStarterData()
   ]);
-  // 履歴API処理
   for(const [raw,lg] of [[centralHist,'central'],[pacificHist,'pacific']]){
    if(raw){const hist=normalizeHistory(raw,lg);if(hist.length){state.history[lg]=hist;state.latest[lg]=hist.at(-1).teams;success++;fullHistory=true;addLog(`${lg==='central'?'セ':'パ'}・リーグ: ${hist.length}日分の履歴を取得`)}}
    else{addLog(`${lg==='central'?'セ':'パ'}・リーグ履歴API: データなし`);}
   }
-  // スケジュールAPI処理
-  if(schedules){state.games=normalizeGames(schedules);state.upcoming=normalizeUpcoming(schedules);addLog(`試合結果: ${state.games.length}試合、予定: ${state.upcoming.length}試合を取得`)}
-  else{addLog('スケジュールAPI: データなし（Netlifyリダイレクト未設定の可能性）');}
-  // フォールバック: 履歴が取得できなかったリーグを最新順位APIで補完
+  if(schedules){
+   state.games=normalizeGames(schedules);
+   state.upcoming=normalizeUpcoming(schedules);
+   if(starters)state.upcoming=mergeStarters(state.upcoming,starters);
+   addLog(`試合結果: ${state.games.length}試合、予定: ${state.upcoming.length}試合を取得`)
+  }else{addLog('スケジュールAPI: データなし（Cloudflare Pages Functionsを確認）');}
+  if(!starters)addLog('予告先発API: 取得できませんでした（試合予定のみ表示）');
   if(success<2){
    addLog('履歴APIの一部取得に失敗。最新順位APIへ切替');
    const [clRaw,plRaw]=await Promise.all([fetchJson(API.central),fetchJson(API.pacific)]);
@@ -291,14 +294,14 @@ async function refreshAll(){
    }
   }
   if(!success){
-   addLog('すべてのAPIからデータを取得できませんでした');
+   addLog('すべての順位APIからデータを取得できませんでした');
    setStatus('取得失敗','bad');
-   showNotice('更新できませんでした','Netlifyの「Deploy log」でリダイレクト設定を確認してください。または「デモ表示」で動作を確認できます。');
+   showNotice('更新できませんでした','Cloudflare Pagesのデプロイ状況とFunctionsを確認してください。または「デモ表示」で動作を確認できます。');
    return;
   }
   if(!fullHistory)addLog('現在順位のみ取得。グラフは翌日以降データが蓄積されると表示されます');
   state.meta.lastFetch=new Date().toISOString();state.meta.source=fullHistory?'履歴API＋最新順位API':'最新順位API';saveState();addLog('更新完了');setStatus('更新済み','ok');try{renderAll();}catch(e){console.error('renderAll error:',e);}
- }catch(e){addLog(`更新失敗: ${e.message}`);setStatus('取得失敗','bad');showNotice('更新できませんでした','保存済みデータ表示しています。ネット接続または外部APIの状態を確認してください。')}
+ }catch(e){addLog(`更新失敗: ${e.message}`);setStatus('取得失敗','bad');showNotice('更新できませんでした','保存済みデータを表示しています。ネット接続または外部APIの状態を確認してください。')}
  finally{if($('#refreshBtn')){$('#refreshBtn').disabled=false;$('#refreshBtn').textContent='両リーグ更新'}scheduleNext()}
 }
 function inferSnapshotDate(){const p=getJstParts();return p.date}
@@ -364,6 +367,34 @@ function normalizeUpcoming(raw){
  }
  const m=new Map();out.forEach(g=>m.set(g.id,g));return [...m.values()].sort((a,b)=>a.date.localeCompare(b.date)||a.time.localeCompare(b.time));
 }
+function normalizeStarters(raw){
+ const rows=Array.isArray(raw)?raw:(Array.isArray(raw?.games)?raw.games:[]);
+ return rows.map(x=>({
+  date:dateNorm(val(x,['date','gameDate'])),
+  home:num(val(x,['home','homeId'])),away:num(val(x,['away','awayId'])),
+  homePitcher:String(val(x,['homePitcher'],'')||'').trim(),
+  awayPitcher:String(val(x,['awayPitcher'],'')||'').trim(),
+  source:String(val(x,['source'],'NPB公式')||'NPB公式')
+ })).filter(x=>x.date&&x.home&&x.away&&(x.homePitcher||x.awayPitcher));
+}
+function mergeStarters(games,raw){
+ const starters=normalizeStarters(raw);if(!starters.length)return games;
+ const map=new Map(starters.map(x=>[`${x.date}-${x.away}-${x.home}`,x]));
+ let merged=0;
+ const result=(games||[]).map(g=>{
+  const s=map.get(`${g.date}-${g.away}-${g.home}`)||map.get(`${g.date}-${g.home}-${g.away}`);
+  if(!s)return g;
+  const reversed=s.home===g.away&&s.away===g.home;
+  const homePitcher=reversed?s.awayPitcher:s.homePitcher;
+  const awayPitcher=reversed?s.homePitcher:s.awayPitcher;
+  if(homePitcher||awayPitcher)merged++;
+  return {...g,homePitcher:homePitcher||g.homePitcher||'',awayPitcher:awayPitcher||g.awayPitcher||'',pitcherSource:s.source||'NPB公式'};
+ });
+ if(merged)addLog(`予告先発: NPB公式から ${merged}試合を補完`);
+ return result;
+}
+async function fetchStarterData(){return fetchJson(`${API.starters}?date=${getJstParts().date}`,18000)}
+
 function computedH2h(lg){
  const ids=LEAGUE_IDS[lg];
  // 1. サーバーが h2h を直接提供している場合はそれを優先
@@ -450,6 +481,12 @@ async function fetchFromServer(){
     }
    }
   }
+  try{
+   const starters=await fetchStarterData();
+   if(starters)state.upcoming=mergeStarters(state.upcoming||[],starters);
+   else addLog('予告先発API: 取得できませんでした（サーバーの試合予定を使用）');
+  }catch(e){console.error('starters fetch error:',e);addLog('予告先発の補完に失敗: '+e.message)}
+  try{saveState()}catch(e){}
   try{renderAll();}catch(e){console.error('renderAll error:',e);addLog('表示更新でエラーが発生しましたが、データは取得済みです');}return true;
  }catch(e){console.error('fetchFromServer error:',e);addLog(`サーバー取得失敗: ${e.message}`);setStatus('サーバー失敗','bad');showNotice('サーバーに接続できません','URLが正しいか、Workerが稼働しているか確認してください。設定タブでURLを確認できます。');return false}
 }
@@ -561,7 +598,8 @@ function renderUpcoming(){
    // 先発投手表示（空文字/null/undefined は「未定」に置換）
    const awayP=g.awayPitcher&&g.awayPitcher!=='null'&&g.awayPitcher!=='undefined'?g.awayPitcher:'';
    const homeP=g.homePitcher&&g.homePitcher!=='null'&&g.homePitcher!=='undefined'?g.homePitcher:'';
-   const pitcherDisplay=(awayP||homeP)?`<span class="game-pitcher">先発: ${escapeHtml(awayP||'未定')} vs ${escapeHtml(homeP||'未定')}</span>`:'';
+   const sourceLabel=g.pitcherSource?`<span class="game-source">${escapeHtml(g.pitcherSource)}</span>`:'';
+   const pitcherDisplay=(awayP||homeP)?`<span class="game-pitcher">予告先発: ${escapeHtml(awayP||'未定')} vs ${escapeHtml(homeP||'未定')}</span>${sourceLabel}`:'';
    htmlOut+=`<div class="game-card">
     <div class="game-time"><div class="date">${escapeHtml(timeDisplay)}</div><div class="time">${statusText}</div></div>
     <div class="game-teams">
