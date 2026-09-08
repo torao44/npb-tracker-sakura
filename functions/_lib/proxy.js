@@ -12,7 +12,7 @@ export async function proxyJson(context, upstreamBase, cacheSeconds = 300) {
       method: context.request.method,
       headers: {
         "Accept": "application/json",
-        "User-Agent": "NPB-Season-Tracker/1.1.8"
+        "User-Agent": "NPB-Season-Tracker/1.2.0"
       },
       cf: {
         cacheEverything: true,

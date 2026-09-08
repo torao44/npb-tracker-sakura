@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<meta name="app-version" content="1.1.9">
+<meta name="app-version" content="1.2.0">
 <meta name="app-updated" content="2026-09-08">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%BE%3C/text%3E%3C/svg%3E">
 <title>NPB シーズントラッカー</title>
@@ -42,28 +42,38 @@ h1{font-family:"Barlow Condensed","Noto Sans JP",sans-serif;font-size:var(--s3);
 .table-scroll{overflow:auto;border:1px solid var(--line);border-radius:12px}.data-table{width:100%;border-collapse:collapse;min-width:920px;font-size:.86rem}.data-table th{position:sticky;top:0;background:var(--navy);color:#fff;padding:.65rem .55rem;white-space:nowrap;text-align:right}.data-table th:nth-child(2){text-align:left}.data-table td{padding:.62rem .55rem;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}.data-table tr:last-child td{border-bottom:0}.data-table tbody tr:hover{background:var(--surface-2)}.data-table td.team{text-align:left;font-weight:700}.rank-medal{display:inline-grid;place-items:center;width:27px;height:27px;border-radius:50%;background:var(--surface-2);font-family:"Barlow Condensed",sans-serif;font-weight:700}.rank-medal.r1{background:#fff0ba;color:#755300}.rank-medal.r2{background:#e8edf0;color:#46525d}.rank-medal.r3{background:#f1d9c4;color:#744520}
 .team-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:.45rem;box-shadow:0 0 0 1px rgba(0,0,0,.12)}
 .matrix{min-width:740px;border-collapse:separate;border-spacing:4px;width:100%;font-size:.82rem}.matrix th{font-weight:700;padding:.55rem}.matrix thead th{color:var(--muted)}.matrix tbody th{text-align:left;white-space:nowrap}.matrix td{text-align:center;border-radius:8px;padding:.65rem .35rem;background:var(--surface-2);border:1px solid transparent;cursor:pointer;white-space:nowrap}.matrix td:hover{border-color:var(--blue)}.matrix td.win{background:#e4f3e9;color:#155b38}.matrix td.loss{background:#f9e6e9;color:#8b2635}.matrix td.even{background:#edf0f3;color:#495563}.matrix td.diag{background:repeating-linear-gradient(45deg,#f3f4f2,#f3f4f2 5px,#e8ebe8 5px,#e8ebe8 10px);color:#8a928d;cursor:default}.matrix-wrap{overflow:auto}.matrix-help{margin-top:.8rem;color:var(--muted);font-size:.82rem}
-.game-card{display:flex;align-items:center;gap:1rem;padding:1rem;border:1px solid var(--line);border-radius:12px;margin-bottom:.7rem;background:var(--surface);transition:.18s}
+.game-card{display:grid;grid-template-columns:minmax(4.8rem,.65fr) minmax(13rem,1.55fr) minmax(10rem,1fr) auto;align-items:center;gap:1rem;padding:1rem;border:1px solid var(--line);border-radius:12px;margin-bottom:.7rem;background:var(--surface);transition:.18s}
 .game-card:hover{border-color:var(--blue);transform:translateY(-1px)}
-.game-time{min-width:5.5rem;text-align:center}
+.game-card.is-live{border-color:#8cc5a5;background:linear-gradient(90deg,#f1fbf5 0,var(--surface) 42%);box-shadow:inset 4px 0 0 var(--ok)}
+.game-time{min-width:0;text-align:center}
 .game-time .date{font-family:"Barlow Condensed",sans-serif;font-size:1.15rem;font-weight:700;color:var(--ink)}
 .game-time .time{font-size:.8rem;color:var(--muted)}
-.game-teams{flex:1;display:flex;align-items:center;gap:.7rem}
-.game-vs{font-size:.85rem;color:var(--muted);font-weight:700}
-.game-team{display:flex;align-items:center;gap:.4rem;font-weight:700}
-.game-info{min-width:7rem;text-align:right;color:var(--muted);font-size:.82rem}
+.game-match{min-width:0}
+.game-team-row{display:grid;grid-template-columns:minmax(0,1fr) 2.2rem;align-items:center;gap:.65rem;padding:.16rem 0}
+.game-team{display:flex;align-items:center;gap:.15rem;font-weight:700;min-width:0}
+.game-score{font-family:"Barlow Condensed","Noto Sans JP",sans-serif;font-size:1.5rem;line-height:1;text-align:right;color:var(--navy);font-variant-numeric:tabular-nums}
+.game-score.missing{font-size:1rem;color:var(--muted)}
+.game-progress{display:flex;align-items:center;gap:.45rem;margin-top:.38rem;color:var(--muted);font-size:.79rem;font-weight:700}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px rgba(31,122,80,.14)}
+.game-card.is-live .live-dot{animation:livePulse 1.8s ease-out infinite}
+.game-info{min-width:0;text-align:right;color:var(--muted);font-size:.82rem;line-height:1.65}
 .game-stadium{font-weight:600;color:var(--blue)}
 .game-pitcher{color:var(--muted)}.game-source{display:inline-block;margin-left:.35rem;color:var(--ok);font-size:.72rem;font-weight:700}
-.game-status{font-size:.78rem;padding:.15rem .5rem;border-radius:6px;background:var(--surface-2);display:inline-block;margin-top:.2rem}
+.game-updated{display:block;color:#78837d;font-size:.72rem}
+.game-status{font-size:.78rem;padding:.22rem .55rem;border-radius:6px;background:var(--surface-2);display:inline-block;white-space:nowrap}
 .game-status.live{background:#e4f3e9;color:#155b38;font-weight:700}
 .game-status.final{background:#edf0f3;color:#495563}
+.game-status.cancelled{background:#f9e6e9;color:#8b2635;font-weight:700}
 .game-status.upcoming{background:#fff9eb;color:#6d4a0e}
 .game-group-title{font-size:.9rem;font-weight:700;color:var(--muted);margin:1.2rem 0 .5rem;padding-bottom:.3rem;border-bottom:1px solid var(--line)}
+@keyframes livePulse{0%{box-shadow:0 0 0 0 rgba(31,122,80,.38)}70%{box-shadow:0 0 0 7px rgba(31,122,80,0)}100%{box-shadow:0 0 0 0 rgba(31,122,80,0)}}
 .settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}.setting-card{border:1px solid var(--line);border-radius:13px;padding:1rem}.setting-card h3{font-size:1rem;margin:0 0 .65rem}.field{display:flex;align-items:center;gap:.7rem;margin:.6rem 0}.field label{min-width:7em;color:var(--muted);font-size:.85rem}.field input,.field select{min-width:0;width:100%;border:1px solid var(--line);border-radius:9px;padding:.55rem;background:#fff}.button-row{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.8rem}.fine{font-size:.78rem;color:var(--muted);margin:.65rem 0 0}
 .log{margin-top:1rem;max-height:180px;overflow:auto;background:var(--navy);color:#dbe4ef;border-radius:11px;padding:.8rem 1rem;font:12px/1.65 ui-monospace,SFMono-Regular,Menlo,monospace}.log div{border-bottom:1px solid rgba(255,255,255,.08);padding:.15rem 0}.log div:last-child{border:0}
 .modal-backdrop{position:fixed;inset:0;background:rgba(8,16,27,.55);display:none;place-items:center;padding:1rem;z-index:20}.modal-backdrop.show{display:grid}.modal{background:#fff;border-radius:16px;box-shadow:0 30px 80px rgba(0,0,0,.3);width:min(430px,100%);padding:1.3rem}.modal h3{margin:0 0 .35rem}.modal p{margin:0 0 1rem;color:var(--muted);font-size:.85rem}.modal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.65rem}.modal-grid label{font-size:.8rem;color:var(--muted)}.modal-grid input{width:100%;margin-top:.3rem;padding:.55rem;border:1px solid var(--line);border-radius:8px}.modal-actions{display:flex;justify-content:flex-end;gap:.5rem;margin-top:1rem}
 footer{max-width:1240px;margin:0 auto;padding:1.2rem var(--space) 2.5rem;color:var(--muted);font-size:.76rem}.hide{display:none!important}
-@media(max-width:840px){.hero-grid{grid-template-columns:1fr}.scoreboard{display:none}.status-strip{grid-template-columns:repeat(2,1fr)}.settings-grid{grid-template-columns:1fr}.toolbar{align-items:stretch}.toolbar .spacer{display:none}.view-switch{width:100%;overflow:auto}.league-switch{flex:1}.btn{flex:1}.panel-head{display:block}.tabs{margin:.6rem 0 0}}
-@media(max-width:490px){.status-strip{grid-template-columns:1fr 1fr;gap:.55rem}.metric{padding:.8rem}.metric strong{font-size:1.25rem}.view{padding:.8rem}.modal-grid{grid-template-columns:1fr}.hero{padding-top:1.3rem}}
+@media(max-width:840px){.game-card{grid-template-columns:4.5rem minmax(0,1fr) auto}.game-info{grid-column:2/4;text-align:left}.hero-grid{grid-template-columns:1fr}.scoreboard{display:none}.status-strip{grid-template-columns:repeat(2,1fr)}.settings-grid{grid-template-columns:1fr}.toolbar{align-items:stretch}.toolbar .spacer{display:none}.view-switch{width:100%;overflow:auto}.league-switch{flex:1}.btn{flex:1}.panel-head{display:block}.tabs{margin:.6rem 0 0}}
+@media(max-width:490px){.game-card{grid-template-columns:3.8rem minmax(0,1fr);gap:.7rem;padding:.85rem}.game-card>.game-status{grid-column:1;grid-row:2;justify-self:center}.game-info{grid-column:2;grid-row:2}.game-team-row{grid-template-columns:minmax(0,1fr) 1.8rem}.game-score{font-size:1.35rem}.status-strip{grid-template-columns:1fr 1fr;gap:.55rem}.metric{padding:.8rem}.metric strong{font-size:1.25rem}.view{padding:.8rem}.modal-grid{grid-template-columns:1fr}.hero{padding-top:1.3rem}}
+@media(prefers-reduced-motion:reduce){.game-card.is-live .live-dot{animation:none}}
 @media(prefers-reduced-motion:no-preference){.panel,.metric{animation:rise .45s both}.metric:nth-child(2){animation-delay:.05s}.metric:nth-child(3){animation-delay:.1s}.metric:nth-child(4){animation-delay:.15s}@keyframes rise{from{opacity:.35;transform:translateY(8px)}to{opacity:1;transform:none}}}
 @media print{body{background:#fff}.hero{padding:1rem 0}.toolbar,.controls,.settings-view,.notice,footer{display:none!important}.shell{max-width:none;padding:0}.panel,.metric{box-shadow:none}.view{display:block!important;break-inside:avoid}.chart-wrap{height:120mm}}@page{size:A4 landscape;margin:12mm}
 </style>
@@ -173,7 +183,7 @@ footer{max-width:1240px;margin:0 auto;padding:1.2rem var(--space) 2.5rem;color:v
   </section>
 </main>
 <footer>
-  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem"><span>このファイルはブラウザ内にデータを保存します。</span><span style="font-family:ui-monospace,monospace">v1.1.9 (2026-09-08)</span></div><div style="margin-top:.3rem">ページを閉じている間も確実に動収集するには、Cron対応のサーバーまたはCloudflare Worker等への配置が必要です。外部データ提供元の仕様変更・停止時は更新できない場合あります。
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem"><span>このファイルはブラウザ内にデータを保存します。</span><span style="font-family:ui-monospace,monospace">v1.2.0 (2026-09-08)</span></div><div style="margin-top:.3rem">ページを閉じている間も確実に動収集するには、Cron対応のサーバーまたはCloudflare Worker等への配置が必要です。外部データ提供元の仕様変更・停止時は更新できない場合あります。
   </div>
 </footer>
 
@@ -207,7 +217,7 @@ const TEAM={
 const NAME_ID={'巨人':1,'読売':1,'ヤクルト':2,'DeNA':3,'浜DeNA':3,'中日':4,'阪神':5,'広島':6,'西武':7,'日本ハム':8,'ロッテ':9,'オリックス':11,'ソフトバンク':12,'楽天':376};
 const LEAGUE_IDS={central:[1,2,3,4,5,6],pacific:[7,8,9,11,12,376]};
 const SCHEDULE_MINUTES=[60,390,1410];
-let season=getJstParts().year,league='central',activeTab='trend',chart=null,state=null,timer=null,editing=null,serverPayload=null;
+let season=getJstParts().year,league='central',activeTab='trend',chart=null,state=null,timer=null,liveTimer=null,liveRefreshing=false,editing=null,serverPayload=null;
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 
 function getJstParts(date=new Date()){
@@ -220,6 +230,7 @@ function loadState(){try{const x=JSON.parse(localStorage.getItem(storageKey()));
 function saveState(){localStorage.setItem(storageKey(),JSON.stringify(state))}
 function val(obj,keys,def=null){for(const k of keys){if(obj&&obj[k]!==undefined&&obj[k]!==null&&obj[k]!=='')return obj[k]}return def}
 function num(x,def=0){const n=Number(x);return Number.isFinite(n)?n:def}
+function optionalNum(x){if(x===null||x===undefined||x==='')return null;const n=Number(x);return Number.isFinite(n)?n:null}
 function unwrap(x){if(Array.isArray(x))return x;for(const k of ['data','standings','games','results','items'])if(Array.isArray(x?.[k]))return x[k];return []}
 function dateNorm(x){const s=String(x??'').replace(/\D/g,'');if(s.length>=8)return `${s.slice(0,4)}-${s.slice(4,6)}-${s.slice(6,8)}`;return String(x??'')}
 function idFrom(item,prefix=''){const raw=val(item,prefix?[`${prefix}TeamId`,`${prefix}TeamID`,`${prefix}TeamCD`]:['TeamCD','TEAM_ID','teamId']);if(raw!==null&&TEAM[num(raw)])return num(raw);const name=val(item,prefix?[`${prefix}TeamName`,`${prefix}TeamNameS`,`${prefix}Team`]:['name','TeamName','teamName']);return NAME_ID[String(name??'').trim()]||null}
@@ -269,7 +280,7 @@ async function refreshAll(){
   else{showNotice('サーバー接続エラー','サーバーからの取得に失敗しました。設定タブでURLを確認してください。');return}
  }
  if($('#refreshBtn')){$('#refreshBtn').disabled=true;$('#refreshBtn').textContent='更新中…'}
- setStatus('更新中','warn');addLog(`v1.1.9 ${season}年度のデータ取得を開始`);
+ setStatus('更新中','warn');addLog(`v1.2.0 ${season}年度のデータ取得を開始`);
  let fullHistory=false,success=0;
  try{
   const [centralHist,pacificHist,schedules,starters]=await Promise.all([
@@ -300,7 +311,7 @@ async function refreshAll(){
    return;
   }
   if(!fullHistory)addLog('現在順位のみ取得。グラフは翌日以降データが蓄積されると表示されます');
-  state.meta.lastFetch=new Date().toISOString();state.meta.source=fullHistory?'履歴API＋最新順位API':'最新順位API';saveState();addLog('更新完了');setStatus('更新済み','ok');try{renderAll();}catch(e){console.error('renderAll error:',e);}
+  state.meta.lastFetch=new Date().toISOString();state.meta.source=fullHistory?'履歴API＋最新順位API':'最新順位API';saveState();addLog('更新完了');setStatus('更新済み','ok');try{renderAll();scheduleLiveRefresh();}catch(e){console.error('renderAll error:',e);}
  }catch(e){addLog(`更新失敗: ${e.message}`);setStatus('取得失敗','bad');showNotice('更新できませんでした','保存済みデータを表示しています。ネット接続または外部APIの状態を確認してください。')}
  finally{if($('#refreshBtn')){$('#refreshBtn').disabled=false;$('#refreshBtn').textContent='両リーグ更新'}scheduleNext()}
 }
@@ -323,47 +334,70 @@ function normalizeGames(raw){
 function normalizeUpcoming(raw){
  const out=[];const now=getJstParts();
  for(const g of unwrap(raw)){
-  // チームIDの取得（複数のキー名に対応）
   let home=idFrom(g,'home')||idFrom(g,'Home')||idFrom(g,'H');
   let away=idFrom(g,'visitor')||idFrom(g,'away')||idFrom(g,'Visitor')||idFrom(g,'Away')||idFrom(g,'V');
   if(!home){const hId=val(g,['HTeamID','HomeTeamID','homeTeamId','HTEAM_ID','H_team_id']);if(hId&&TEAM[num(hId)])home=num(hId)}
   if(!away){const vId=val(g,['VTeamID','VisitorTeamID','visitorTeamId','VTEAM_ID','V_team_id']);if(vId&&TEAM[num(vId)])away=num(vId)}
-  if(!home){const hName=val(g,['HTeamNameS','HomeTeamNameS','HomeTeamName','homeTeamName','HTeamName']);if(hName){const matched=Object.keys(NAME_ID).find(k=>hName.includes(k)||k.includes(hName));if(matched)home=NAME_ID[matched]}}
-  if(!away){const vName=val(g,['VTeamNameS','VisitorTeamNameS','VisitorTeamName','visitorTeamName','VTeamName']);if(vName){const matched=Object.keys(NAME_ID).find(k=>vName.includes(k)||k.includes(vName));if(matched)away=NAME_ID[matched]}}
+  if(!home){const hName=String(val(g,['HTeamNameS','HomeTeamNameS','HomeTeamName','homeTeamName','HTeamName'],'')||'');const matched=Object.keys(NAME_ID).find(k=>hName.includes(k)||k.includes(hName));if(matched)home=NAME_ID[matched]}
+  if(!away){const vName=String(val(g,['VTeamNameS','VisitorTeamNameS','VisitorTeamName','visitorTeamName','VTeamName'],'')||'');const matched=Object.keys(NAME_ID).find(k=>vName.includes(k)||k.includes(vName));if(matched)away=NAME_ID[matched]}
   if(!home||!away)continue;
-  // 試合状態の判定
-  const stateText=String(val(g,['gameStateName','gameState','status','STATE','GameStateName','GAME_STATE_NAME'],'')).toLowerCase();
-  const gameState=num(val(g,['GameState','gameState','GAME_STATE']));
-  const gameResult=num(val(g,['GameResult','gameResult','GAME_RESULT']));
-  // GameState: 0=未開始, 1=進行中, 2=終了, 3=中断, 4=中止, 5=ノーゲーム
-  const isFinal=stateText.includes('終了')||stateText.includes('final')||gameState===2||gameState===3||gameResult===2;
-  const isCancelled=stateText.includes('中止')||stateText.includes('cancel')||gameState===4||gameState===5||gameResult===3;
-  const isLive=gameState===1||stateText.includes('進行中')||stateText.includes('live')||stateText.includes('play')||stateText.includes('試合中');
-  // 日付の取得
+
   let gameDate=dateNorm(val(g,['gameDate','GAME_DATE','date','DateJPN','dateJPN','DATE_JPN']));
-  if(!gameDate){const dj=String(val(g,['DateJPN','DATE_JPN'],''));if(dj&&dj.length===8)gameDate=`${dj.slice(0,4)}-${dj.slice(4,6)}-${dj.slice(6,8)}`}
-  if(!gameDate)continue;
-  // 特殊試合の除外
-  const type=String(val(g,['gameTypeName','leagueName','GAME_TYPE_NAME','GameTypeName'],'')).toLowerCase();if(type.includes('クライマックス')||type.includes('日本シリーズ')||type.includes('オルスター'))continue;
-  // 終了済み試合は除外
-  if(isFinal)continue;
-  // 過去日付は除外（当日・未来は含む）
+  if(!gameDate){const dj=String(val(g,['DateJPN','DATE_JPN'],''));if(/^\d{8}$/.test(dj))gameDate=`${dj.slice(0,4)}-${dj.slice(4,6)}-${dj.slice(6,8)}`}
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(gameDate))continue;
   const [y,m,d]=gameDate.split('-').map(Number);
   if(y<now.year||(y===now.year&&m<now.month)||(y===now.year&&m===now.month&&d<now.day))continue;
-  // 時間の取得
-  let timeStr=String(val(g,['gameTime','startTime','GAME_TIME','time','TimeJPN','TIME_JPN'],''));
-  if(!timeStr){const tj=String(val(g,['TimeJPN','TIME_JPN'],''));if(tj&&tj.length===4)timeStr=`${tj.slice(0,2)}:${tj.slice(2,4)}`}
-  // 球場名
+
+  const type=String(val(g,['gameTypeName','leagueName','GAME_TYPE_NAME','GameTypeName'],'')).toLowerCase();
+  if(type.includes('クライマックス')||type.includes('日本シリーズ')||type.includes('オルスター'))continue;
+
+  let timeStr=String(val(g,['gameTime','startTime','GAME_TIME','time','TimeJPN','TIME_JPN'],'')||'').trim();
+  if(/^\d{4}$/.test(timeStr))timeStr=`${timeStr.slice(0,2)}:${timeStr.slice(2,4)}`;
+  const timeMatch=timeStr.match(/(\d{1,2}):(\d{2})/);if(timeMatch)timeStr=`${timeMatch[1].padStart(2,'0')}:${timeMatch[2]}`;
   const stadium=String(val(g,['stadiumName','stadium','STADIUM_NAME','venue','StadiumName','StadiumNameS','STADIUM_NAME_S'],'')||'');
-  // 先発投手（複数のキー名パターンに対応）
+
   const homePitcherKeys=['homePitcher','homeStartingPitcher','HOME_PITCHER','Home_StarterPitcher_Names','Home_StarterPitcher_Name','HomeStarterPitcherNames','HomeStarterPitcherName','HomeStarterPitcher','home_pitcher','home_pitcher_name','HOME_STARTING_PITCHER','H_PITCHER'];
   const awayPitcherKeys=['awayPitcher','awayStartingPitcher','AWAY_PITCHER','Visitor_StarterPitcher_Names','Visitor_StarterPitcher_Name','VisitorStarterPitcherNames','VisitorStarterPitcherName','VisitorStarterPitcher','Away_StarterPitcher_Names','Away_StarterPitcher_Name','away_pitcher','away_pitcher_name','AWAY_STARTING_PITCHER','V_PITCHER'];
-  let homePitcher=val(g,homePitcherKeys,'');
-  let awayPitcher=val(g,awayPitcherKeys,'');
-  // null/undefined/空文字を統一
-  homePitcher=(homePitcher===null||homePitcher===undefined||homePitcher===''||homePitcher==='null'||homePitcher==='undefined')?'':String(homePitcher).trim();
-  awayPitcher=(awayPitcher===null||awayPitcher===undefined||awayPitcher===''||awayPitcher==='null'||awayPitcher==='undefined')?'':String(awayPitcher).trim();
-  out.push({id:String(val(g,['gameId','GAME_ID','id','GameID','GAMEID'],`${gameDate}-${away}-${home}`)),date:gameDate,time:timeStr,home,away,stadium,homePitcher,awayPitcher,isCancelled,isLive});
+  let homePitcher=String(val(g,homePitcherKeys,'')||'').trim(),awayPitcher=String(val(g,awayPitcherKeys,'')||'').trim();
+  if(['null','undefined'].includes(homePitcher.toLowerCase()))homePitcher='';if(['null','undefined'].includes(awayPitcher.toLowerCase()))awayPitcher='';
+
+  const stateRaw=String(val(g,['gameStateName','GameStateName','GameStateNameS','GAME_STATE_NAME','status','Status','STATUS','gameStatus','GameStatus','GAME_STATUS','stateText','StateText'],'')||'').trim();
+  const stateText=stateRaw.toLowerCase();
+  const gameState=optionalNum(val(g,['GameState','gameState','GAME_STATE']));
+  const gameResult=optionalNum(val(g,['GameResult','gameResult','GAME_RESULT']));
+  const homeScore=optionalNum(val(g,['homeTeamTotalRuns','HomeTeamTotalRuns','HOME_SCORE','homeScore','HomeScore','HTeamScore','HomeTeamScore','HomeTeamTotalScore','HomeTotalScore','HScore','H_POINT','Home_Point','Home_Runs']));
+  const awayScore=optionalNum(val(g,['visitorTeamTotalRuns','VisitorTeamTotalRuns','awayTeamTotalRuns','AWAY_SCORE','awayScore','visitorScore','AwayScore','VTeamScore','VisitorTeamScore','VisitorTeamTotalScore','AwayTeamScore','AwayTeamTotalScore','VisitorTotalScore','VScore','V_POINT','Visitor_Point','Away_Runs']));
+
+  let statusDetail=String(val(g,['statusDetail','StatusDetail','gameStatusDetail','GameStatusDetail','inningText','InningText','INNING_TEXT','Situation','SITUATION'],'')||'').trim();
+  let inning=optionalNum(val(g,['inning','Inning','currentInning','CurrentInning','CURRENT_INNING','GameInning','GAME_INNING','NowInning','CurrentRound','Round','ROUND']));
+  let inningSide=String(val(g,['inningSide','InningSide','topBottom','TopBottom','TOP_BOTTOM','inningTopBottom','InningTopBottom','NowTopBottom','TopOrBottom','TB'],'')||'').trim();
+  const combined=`${stateRaw} ${statusDetail}`;
+  const inningMatch=combined.match(/(\d{1,2})\s*回\s*(表|裏)?/);
+  if(inning===null&&inningMatch)inning=Number(inningMatch[1]);
+  if(!inningSide&&inningMatch?.[2])inningSide=inningMatch[2];
+  if(/^(t|top|1)$|表|先攻/i.test(inningSide))inningSide='表';else if(/^(b|bottom|bot|2)$|裏|後攻/i.test(inningSide))inningSide='裏';else inningSide='';
+
+  const isCancelled=stateText.includes('中止')||stateText.includes('cancel')||stateText.includes('ノーゲーム')||(gameState!==null&&[4,5].includes(gameState))||gameResult===3;
+  const isSuspended=!isCancelled&&(stateText.includes('中断')||stateText.includes('suspend')||gameState===3);
+  const textFinal=stateText.includes('終了')||stateText.includes('試合済')||stateText.includes('final')||stateText.includes('game set');
+  const isFinal=!isCancelled&&!isSuspended&&(textFinal||gameState===2||gameResult===2);
+  const inningSuggestsLive=inning!==null&&inning>0&&!isFinal&&!isCancelled;
+  const scoreSuggestsLive=homeScore!==null&&awayScore!==null&&!isFinal&&!isCancelled&&gameDate===now.date;
+  const isLive=!isFinal&&!isCancelled&&(isSuspended||stateText.includes('進行中')||stateText.includes('試合中')||stateText.includes('live')||stateText.includes('play')||gameState===1||inningSuggestsLive||scoreSuggestsLive);
+  if(!statusDetail){
+   if(isFinal)statusDetail='試合終了';
+   else if(isCancelled)statusDetail='試合中止';
+   else if(isSuspended)statusDetail='中断中';
+   else if(inning!==null)statusDetail=`${inning}回${inningSide}`;
+   else if(isLive)statusDetail='試合中';
+   else statusDetail='試合前';
+  }
+
+  out.push({
+   id:String(val(g,['gameId','GAME_ID','id','GameID','GAMEID'],`${gameDate}-${away}-${home}`)),date:gameDate,time:timeStr,home,away,stadium,
+   homePitcher,awayPitcher,homeScore,awayScore,inning,inningSide,statusDetail,stateText:stateRaw,isCancelled,isFinal,isLive,
+   scoreUpdatedAt:new Date().toISOString(),isSuspended
+  });
  }
  const m=new Map();out.forEach(g=>m.set(g.id,g));return [...m.values()].sort((a,b)=>a.date.localeCompare(b.date)||a.time.localeCompare(b.time));
 }
@@ -394,6 +428,62 @@ function mergeStarters(games,raw){
  return result;
 }
 async function fetchStarterData(){return fetchJson(`${API.starters}?date=${getJstParts().date}`,18000)}
+
+function gameKey(g){return `${g.date}-${g.away}-${g.home}`}
+function mergeScheduleGames(oldGames,newGames){
+ const oldMap=new Map((oldGames||[]).map(g=>[gameKey(g),g]));
+ return (newGames||[]).map(g=>{
+  const old=oldMap.get(gameKey(g));if(!old)return g;
+  return {...old,...g,homePitcher:g.homePitcher||old.homePitcher||'',awayPitcher:g.awayPitcher||old.awayPitcher||'',pitcherSource:old.pitcherSource||g.pitcherSource||''};
+ });
+}
+function currentUpcoming(){return state?.upcoming?.length?state.upcoming:(serverPayload?.upcoming||[])}
+function gameStartMs(g){
+ if(!g?.date||!/^\d{1,2}:\d{2}/.test(g.time||''))return null;
+ const [y,m,d]=g.date.split('-').map(Number),[hh,mm]=g.time.slice(0,5).split(':').map(Number);
+ return Date.UTC(y,m-1,d,hh-9,mm);
+}
+function shouldPollLive(){
+ const now=Date.now(),today=getJstParts().date;
+ return currentUpcoming().some(g=>{
+  if(g.isLive)return true;
+  if(g.date!==today||g.isFinal||g.isCancelled)return false;
+  const start=gameStartMs(g);return start!==null&&now>=start-2*60000&&now<=start+6*3600000;
+ });
+}
+function nextTodayGameStart(){
+ const now=Date.now(),today=getJstParts().date;
+ return currentUpcoming().map(g=>g.date===today&&!g.isFinal&&!g.isCancelled?gameStartMs(g):null).filter(x=>x&&x>now).sort((a,b)=>a-b)[0]||null;
+}
+async function refreshLiveScores(){
+ if(liveRefreshing||document.visibilityState==='hidden')return;
+ liveRefreshing=true;
+ try{
+  const raw=await fetchJson(`${API.schedules}?Year=${season}`,15000);
+  if(!raw){addLog('ライブ速報: スケジュールAPIを取得できませんでした');return}
+  let fresh=normalizeUpcoming(raw);
+  fresh=mergeScheduleGames(currentUpcoming(),fresh);
+  state.upcoming=fresh;if(serverPayload)serverPayload.upcoming=fresh;
+  state.meta.liveFetch=new Date().toISOString();saveState();renderUpcoming();
+  const live=fresh.filter(g=>g.isLive).length;
+  addLog(live?`ライブ速報を更新: 進行中 ${live}試合`:'試合状況を更新');
+ }catch(e){console.error('refreshLiveScores error:',e);addLog(`ライブ速報の更新失敗: ${e.message}`)}
+ finally{liveRefreshing=false;scheduleLiveRefresh()}
+}
+function scheduleLiveRefresh(){
+ if(liveTimer)clearTimeout(liveTimer);liveTimer=null;
+ if(document.visibilityState==='hidden')return;
+ if(shouldPollLive()){
+  const delay=activeTab==='upcoming'?60000:180000;
+  liveTimer=setTimeout(refreshLiveScores,delay);return;
+ }
+ const next=nextTodayGameStart();
+ if(next){liveTimer=setTimeout(refreshLiveScores,Math.max(1000,Math.min(next-Date.now()+5000,2147483647)))}
+}
+function formatJstTime(iso){
+ if(!iso)return'';const t=Date.parse(iso);if(!Number.isFinite(t))return'';
+ return new Intl.DateTimeFormat('ja-JP',{timeZone:'Asia/Tokyo',hour:'2-digit',minute:'2-digit'}).format(new Date(t));
+}
 
 function computedH2h(lg){
  const ids=LEAGUE_IDS[lg];
@@ -466,28 +556,23 @@ async function fetchFromServer(){
   state.meta.messages=[`[server] 収集サーバーから取得 (${d.meta?.lastRun||'不明'})`,...(d.meta?.log||[]).map(x=>`[server] ${x}`)].slice(0,30);
   try{saveState()}catch(e){addLog('localStorage保存をスキップ（容量回避）')}
   setStatus('サーバー取得済み','ok');hideNotice();addLog('サーバー取得完了');
-  // サーバーが upcoming を提供していない場合、内蔵APIから補完取得
-  if(!(state.upcoming&&state.upcoming.length)){
-   try{
-    const sched=await fetchJson(`${API.schedules}?Year=${season}`,25000);
-    state.upcoming=normalizeUpcoming(sched);
-    addLog(`試合予定: ${state.upcoming.length}試合を補完取得`);
-   }catch(e){
-    console.error('schedules fetch error:',e);
-    if(String(e).includes('CORS')||String(e).includes('Failed to fetch')){
-     addLog('試合予定: CORS制約で直接取得不可（サーバー接続モードではサーバー側で upcoming を提供してください）');
-    }else{
-     addLog('試合予定の補完取得に失敗: '+e.message);
-    }
+  // 内蔵スケジュールAPIで試合予定・ライブスコアを補完
+  try{
+   const sched=await fetchJson(`${API.schedules}?Year=${season}`,25000);
+   if(sched){
+    const fresh=normalizeUpcoming(sched);
+    state.upcoming=mergeScheduleGames(state.upcoming||d.upcoming||[],fresh);
+    serverPayload.upcoming=state.upcoming;
+    addLog(`試合予定・状況: ${state.upcoming.length}試合を補完取得`);
    }
-  }
+  }catch(e){console.error('schedules fetch error:',e);addLog('試合予定・状況の補完取得に失敗: '+e.message)}
   try{
    const starters=await fetchStarterData();
    if(starters)state.upcoming=mergeStarters(state.upcoming||[],starters);
    else addLog('予告先発API: 取得できませんでした（サーバーの試合予定を使用）');
   }catch(e){console.error('starters fetch error:',e);addLog('予告先発の補完に失敗: '+e.message)}
   try{saveState()}catch(e){}
-  try{renderAll();}catch(e){console.error('renderAll error:',e);addLog('表示更新でエラーが発生しましたが、データは取得済みです');}return true;
+  try{renderAll();scheduleLiveRefresh();}catch(e){console.error('renderAll error:',e);addLog('表示更新でエラーが発生しましたが、データは取得済みです');}return true;
  }catch(e){console.error('fetchFromServer error:',e);addLog(`サーバー取得失敗: ${e.message}`);setStatus('サーバー失敗','bad');showNotice('サーバーに接続できません','URLが正しいか、Workerが稼働しているか確認してください。設定タブでURLを確認できます。');return false}
 }
 function saveServer(){const v=($('#serverInput').value||'').trim();if(v&&!/^https?:\/\//.test(v)){alert('http:// または https:// で始まるURLを入力してください。');return}localStorage.setItem('npb-server-url',v);addLog(v?`サーバーURLを設定: ${v}`:'サーバーURLを解除');if(v)fetchFromServer();else refreshAll()}
@@ -573,52 +658,54 @@ function renderUpcoming(){
  try{
   const container=$('#upcomingContainer');if(!container)return;
   const ids=new Set(LEAGUE_IDS[league]);
-  const games=(serverPayload?.upcoming||state.upcoming||[]).filter(g=>ids.has(g.home)&&ids.has(g.away));
+  const games=currentUpcoming().filter(g=>ids.has(g.home)&&ids.has(g.away));
   if(!games.length){
    const isServerMode=!!serverUrl();
    const msg=isServerMode
-    ?'<div class="empty">今後の試合予定はまだありません。<br><small style="color:#a46212">サーバー接続モードでは、サーバーが upcoming データを提供するまで試合予定は表されません。<br>ブラウザから直接取得しようとすると CORS 制約でブロックされます。</small></div>'
-    :'<div class="empty">今後の試合予定はまだありません。<br><small>「両リーグ更新」を実行すると、スケジュールAPIから取得します。</small></div>';
+    ?'<div class="empty">今後の試合予定はまだありません。<br><small>サーバーの upcoming または内蔵スケジュールAPIから取得します。</small></div>'
+    :'<div class="empty">今後の試合予定はまだありません。<br><small>「両リーグ更新」を実行すると、試合予定と試合状況を取得します。</small></div>';
    container.innerHTML=msg;return;
   }
-  const now=getJstParts();
-  const today=`${now.year}-${String(now.month).padStart(2,'0')}-${String(now.day).padStart(2,'0')}`;
-  let currentDate='';
-  let htmlOut='';
+  const today=getJstParts().date;let currentDate='',htmlOut='';
   for(const g of games){
    if(g.date!==currentDate){currentDate=g.date;htmlOut+=`<div class="game-group-title">${g.date} (${formatDateLabel(g.date)})</div>`}
    const homeTeam=TEAM[g.home],awayTeam=TEAM[g.away];
-   // ステータス判定（進行中 > 中止 > 本日 > 予定）
    let statusClass='upcoming',statusText='予定';
-   if(g.isCancelled){statusClass='final';statusText='中止'}
+   if(g.isCancelled){statusClass='cancelled';statusText='中止'}
+   else if(g.isFinal){statusClass='final';statusText='終了'}
+   else if(g.isSuspended){statusClass='live';statusText='中断'}
    else if(g.isLive){statusClass='live';statusText='進行中'}
-   else if(g.date===today){statusClass='live';statusText='本日'}
-   const timeDisplay=g.time?g.time:'未定';
+   else if(g.date===today){statusClass='upcoming';statusText='本日'}
+   const hasScore=g.homeScore!==null&&g.homeScore!==undefined&&g.awayScore!==null&&g.awayScore!==undefined;
+   const awayScore=hasScore?escapeHtml(g.awayScore):'—',homeScore=hasScore?escapeHtml(g.homeScore):'—';
+   const scoreClass=hasScore?'':' missing';
+   const progress=g.isCancelled?'試合中止':g.isFinal?'試合終了':g.statusDetail&&g.statusDetail!=='試合前'?g.statusDetail:(g.isLive?'試合中':`${g.time||'開始未定'} 開始`);
+   const liveDot=g.isLive?'<span class="live-dot" aria-hidden="true"></span>':'';
    const stadiumDisplay=g.stadium?`<span class="game-stadium">${escapeHtml(g.stadium)}</span>`:'';
-   // 先発投手表示（空文字/null/undefined は「未定」に置換）
-   const awayP=g.awayPitcher&&g.awayPitcher!=='null'&&g.awayPitcher!=='undefined'?g.awayPitcher:'';
-   const homeP=g.homePitcher&&g.homePitcher!=='null'&&g.homePitcher!=='undefined'?g.homePitcher:'';
+   const awayP=g.awayPitcher&&!['null','undefined'].includes(String(g.awayPitcher).toLowerCase())?g.awayPitcher:'';
+   const homeP=g.homePitcher&&!['null','undefined'].includes(String(g.homePitcher).toLowerCase())?g.homePitcher:'';
    const sourceLabel=g.pitcherSource?`<span class="game-source">${escapeHtml(g.pitcherSource)}</span>`:'';
    const pitcherDisplay=(awayP||homeP)?`<span class="game-pitcher">予告先発: ${escapeHtml(awayP||'未定')} vs ${escapeHtml(homeP||'未定')}</span>${sourceLabel}`:'';
-   htmlOut+=`<div class="game-card">
-    <div class="game-time"><div class="date">${escapeHtml(timeDisplay)}</div><div class="time">${statusText}</div></div>
-    <div class="game-teams">
-     <span class="game-team"><span class="team-dot" style="background:${awayTeam.color}"></span>${awayTeam.name}</span>
-     <span class="game-vs">vs</span>
-     <span class="game-team"><span class="team-dot" style="background:${homeTeam.color}"></span>${homeTeam.name}</span>
+   const updated=(g.isLive||g.isFinal)&&g.scoreUpdatedAt?`<span class="game-updated">状況更新 ${escapeHtml(formatJstTime(g.scoreUpdatedAt))}</span>`:'';
+   htmlOut+=`<div class="game-card${g.isLive?' is-live':''}">
+    <div class="game-time"><div class="date">${escapeHtml(g.time||'未定')}</div><div class="time">${statusText}</div></div>
+    <div class="game-match" aria-label="${escapeHtml(`${awayTeam.name} ${hasScore?g.awayScore:''} 対 ${homeTeam.name} ${hasScore?g.homeScore:''}`)}">
+     <div class="game-team-row"><span class="game-team"><span class="team-dot" style="background:${awayTeam.color}"></span>${awayTeam.name}</span><strong class="game-score${scoreClass}">${awayScore}</strong></div>
+     <div class="game-team-row"><span class="game-team"><span class="team-dot" style="background:${homeTeam.color}"></span>${homeTeam.name}</span><strong class="game-score${scoreClass}">${homeScore}</strong></div>
+     <div class="game-progress">${liveDot}<span>${escapeHtml(progress)}</span></div>
     </div>
-    <div class="game-info">${stadiumDisplay}${stadiumDisplay&&pitcherDisplay?'<br>':''}${pitcherDisplay}</div>
+    <div class="game-info">${stadiumDisplay}${stadiumDisplay&&pitcherDisplay?'<br>':''}${pitcherDisplay}${updated}</div>
     <span class="game-status ${statusClass}">${statusText}</span>
    </div>`;
   }
-  container.innerHTML=htmlOut;
+  container.innerHTML=htmlOut;scheduleLiveRefresh();
  }catch(e){console.error('renderUpcoming error:',e)}
 }
 function openModal(a,b){editing={a,b};const x=computedH2h(league)[a][b];$('#modalTeams').textContent=`${TEAM[a].name} から見た ${TEAM[b].name} 戦`;$('#editWin').value=x.w;$('#editLoss').value=x.l;$('#editDraw').value=x.d;$('#h2hModal').classList.add('show');$('#editWin').focus()}
 function closeModal(){$('#h2hModal').classList.remove('show');editing=null}
 function saveModal(){if(!editing)return;const {a,b}=editing,w=Math.max(0,num($('#editWin').value)),l=Math.max(0,num($('#editLoss').value)),d=Math.max(0,num($('#editDraw').value));state.h2hOverrides[league][`${a}-${b}`]={w,l,d};state.h2hOverrides[league][`${b}-${a}`]={w:l,l:w,d};saveState();addLog(`${TEAM[a].name}－${TEAM[b].name} の対戦成績を手動補正`);renderH2h();closeModal()}
 function switchLeague(lg){league=lg;$$('[data-league]').forEach(b=>b.classList.toggle('active',b.dataset.league===lg));renderAll()}
-function switchTab(tab){activeTab=tab;$$('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));$$('.panel .view').forEach(v=>v.classList.remove('active'));$(`#${tab}View`).classList.add('active');if(tab==='trend')setTimeout(()=>chart?.resize(),20);if(tab==='upcoming')renderUpcoming()}
+function switchTab(tab){activeTab=tab;$$('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));$$('.panel .view').forEach(v=>v.classList.remove('active'));$(`#${tab}View`).classList.add('active');if(tab==='trend')setTimeout(()=>chart?.resize(),20);if(tab==='upcoming'){renderUpcoming();if(shouldPollLive())refreshLiveScores();else scheduleLiveRefresh()}}
 function switchMain(view){$$('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===view));$('#dashboardView').classList.toggle('hide',view!=='dashboard');$('#settingsView').classList.toggle('hide',view!=='settings')}
 function exportData(){const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`npb_${season}_backup.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);addLog('バックアップを書き出しました')}
 async function importData(file){try{const x=JSON.parse(await file.text());if(!x||x.version!==4||!x.history)throw new Error('対応形式ではありません');season=x.season||season;state=x;saveState();$('#seasonInput').value=season;addLog('バックアップを読み込みました');renderAll()}catch(e){alert(`読み込みできません: ${e.message}`)}}
@@ -628,7 +715,7 @@ function nextScheduleDate(){
  const now=new Date(),p=getJstParts(now);const jstBase=Date.UTC(p.year,p.month-1,p.day,p.hour,p.minute,p.second)-9*3600000;
  for(let add=0;add<2;add++)for(const mins of SCHEDULE_MINUTES){const candidate=Date.UTC(p.year,p.month-1,p.day+add,Math.floor(mins/60),mins%60)-9*3600000;if(candidate>now.getTime()+1000)return new Date(candidate)}return new Date(jstBase+86400000)
 }
-function scheduleNext(){if(timer)clearTimeout(timer);const next=nextScheduleDate(),fmt=new Intl.DateTimeFormat('ja-JP',{timeZone:'Asia/Tokyo',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}).format(next);$('#heroNext').textContent=fmt;timer=setTimeout(()=>refreshAll(),Math.max(1000,next-Date.now()))}
+function scheduleNext(){if(timer)clearTimeout(timer);const next=nextScheduleDate(),fmt=new Intl.DateTimeFormat('ja-JP',{timeZone:'Asia/Tokyo',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}).format(next);$('#heroNext').textContent=shouldPollLive()?'試合中は1分ごと':fmt;timer=setTimeout(()=>refreshAll(),Math.max(1000,next-Date.now()));scheduleLiveRefresh()}
 function maybeRefresh(){if(serverUrl())return;const last=state.meta.lastFetch?Date.parse(state.meta.lastFetch):0;if(!last||Date.now()-last>6*3600000)refreshAll()}
 
 function bind(){
@@ -651,10 +738,10 @@ function bind(){
  $('#disconnectServerBtn')?.addEventListener('click',clearServer);
  $('#h2hModal').addEventListener('click',e=>{if(e.target===$('#h2hModal'))closeModal()});
  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
- document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')maybeRefresh()});
+ document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){if(shouldPollLive())refreshLiveScores();else{maybeRefresh();scheduleLiveRefresh()}}else if(liveTimer){clearTimeout(liveTimer);liveTimer=null}});
 }
 function init(){
- state=loadState();$('#seasonInput').value=season;$('#serverInput').value=serverUrl();bind();renderAll();scheduleNext();
+ state=loadState();$('#seasonInput').value=season;$('#serverInput').value=serverUrl();bind();renderAll();scheduleNext();scheduleLiveRefresh();
  if(serverUrl()){fetchFromServer()}
  else{const last=state.meta.lastFetch;if(last){const age=(Date.now()-Date.parse(last))/3600000;setStatus(age<12?'保存済み':'要更新',age<12?'ok':'warn')}else setStatus('未取得','warn');maybeRefresh()}
 }

@@ -19,7 +19,7 @@ export async function onRequest(context) {
   }
   try {
     const upstream = await fetch("https://npb.jp/announcement/starter/", {
-      headers: { "Accept": "text/html,application/xhtml+xml", "User-Agent": "NPB-Season-Tracker/1.1.9" },
+      headers: { "Accept": "text/html,application/xhtml+xml", "User-Agent": "NPB-Season-Tracker/1.2.0" },
       cf: { cacheEverything: true, cacheTtl: 300 }
     });
     if (!upstream.ok) return json({ ok: false, message: `NPB upstream HTTP ${upstream.status}`, games: [] }, 502, 0);
