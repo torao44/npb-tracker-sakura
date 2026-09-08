@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<meta name="app-version" content="1.2.0">
+<meta name="app-version" content="1.2.1">
 <meta name="app-updated" content="2026-09-08">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%BE%3C/text%3E%3C/svg%3E">
 <title>NPB シーズントラッカー</title>
@@ -183,7 +183,7 @@ footer{max-width:1240px;margin:0 auto;padding:1.2rem var(--space) 2.5rem;color:v
   </section>
 </main>
 <footer>
-  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem"><span>このファイルはブラウザ内にデータを保存します。</span><span style="font-family:ui-monospace,monospace">v1.2.0 (2026-09-08)</span></div><div style="margin-top:.3rem">ページを閉じている間も確実に動収集するには、Cron対応のサーバーまたはCloudflare Worker等への配置が必要です。外部データ提供元の仕様変更・停止時は更新できない場合あります。
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem"><span>このファイルはブラウザ内にデータを保存します。</span><span style="font-family:ui-monospace,monospace">v1.2.1 (2026-09-08)</span></div><div style="margin-top:.3rem">ページを閉じている間も確実に動収集するには、Cron対応のサーバーまたはCloudflare Worker等への配置が必要です。外部データ提供元の仕様変更・停止時は更新できない場合あります。
   </div>
 </footer>
 
@@ -280,7 +280,7 @@ async function refreshAll(){
   else{showNotice('サーバー接続エラー','サーバーからの取得に失敗しました。設定タブでURLを確認してください。');return}
  }
  if($('#refreshBtn')){$('#refreshBtn').disabled=true;$('#refreshBtn').textContent='更新中…'}
- setStatus('更新中','warn');addLog(`v1.2.0 ${season}年度のデータ取得を開始`);
+ setStatus('更新中','warn');addLog(`v1.2.1 ${season}年度のデータ取得を開始`);
  let fullHistory=false,success=0;
  try{
   const [centralHist,pacificHist,schedules,starters]=await Promise.all([
@@ -377,18 +377,22 @@ function normalizeUpcoming(raw){
   if(!inningSide&&inningMatch?.[2])inningSide=inningMatch[2];
   if(/^(t|top|1)$|表|先攻/i.test(inningSide))inningSide='表';else if(/^(b|bottom|bot|2)$|裏|後攻/i.test(inningSide))inningSide='裏';else inningSide='';
 
+  // イニングは現実的な範囲に制限（NPBレギュラーシーズンは通常9回、延長でも15回までが現実的）
+  const validInning=inning!==null&&inning>=1&&inning<=15;
+  if(!validInning)inning=null;
+
   const isCancelled=stateText.includes('中止')||stateText.includes('cancel')||stateText.includes('ノーゲーム')||(gameState!==null&&[4,5].includes(gameState))||gameResult===3;
   const isSuspended=!isCancelled&&(stateText.includes('中断')||stateText.includes('suspend')||gameState===3);
   const textFinal=stateText.includes('終了')||stateText.includes('試合済')||stateText.includes('final')||stateText.includes('game set');
   const isFinal=!isCancelled&&!isSuspended&&(textFinal||gameState===2||gameResult===2);
-  const inningSuggestsLive=inning!==null&&inning>0&&!isFinal&&!isCancelled;
+  const inningSuggestsLive=validInning&&inning>0&&!isFinal&&!isCancelled;
   const scoreSuggestsLive=homeScore!==null&&awayScore!==null&&!isFinal&&!isCancelled&&gameDate===now.date;
   const isLive=!isFinal&&!isCancelled&&(isSuspended||stateText.includes('進行中')||stateText.includes('試合中')||stateText.includes('live')||stateText.includes('play')||gameState===1||inningSuggestsLive||scoreSuggestsLive);
   if(!statusDetail){
    if(isFinal)statusDetail='試合終了';
    else if(isCancelled)statusDetail='試合中止';
    else if(isSuspended)statusDetail='中断中';
-   else if(inning!==null)statusDetail=`${inning}回${inningSide}`;
+   else if(validInning&&inning!==null)statusDetail=`${inning}回${inningSide}`;
    else if(isLive)statusDetail='試合中';
    else statusDetail='試合前';
   }
