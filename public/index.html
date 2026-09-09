@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<meta name="app-version" content="1.2.5">
+<meta name="app-version" content="1.2.6">
 <meta name="app-updated" content="2026-09-08">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%BE%3C/text%3E%3C/svg%3E">
 <title>NPB シーズントラッカー</title>
@@ -183,7 +183,7 @@ footer{max-width:1240px;margin:0 auto;padding:1.2rem var(--space) 2.5rem;color:v
   </section>
 </main>
 <footer>
-  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem"><span>このファイルはブラウザ内にデータを保存します。</span><span style="font-family:ui-monospace,monospace">v1.2.5 (2026-09-09)</span></div><div style="margin-top:.3rem">ページを閉じている間も確実に動収集するには、Cron対応のサーバーまたはCloudflare Worker等への配置が必要です。外部データ提供元の仕様変更・停止時は更新できない場合あります。
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem"><span>このファイルはブラウザ内にデータを保存します。</span><span style="font-family:ui-monospace,monospace">v1.2.6 (2026-09-09)</span></div><div style="margin-top:.3rem">ページを閉じている間も確実に動収集するには、Cron対応のサーバーまたはCloudflare Worker等への配置が必要です。外部データ提供元の仕様変更・停止時は更新できない場合あります。
   </div>
 </footer>
 
@@ -281,7 +281,7 @@ async function refreshAll(){
   else{showNotice('サーバー接続エラー','サーバーからの取得に失敗しました。設定タブでURLを確認してください。');return}
  }
  if($('#refreshBtn')){$('#refreshBtn').disabled=true;$('#refreshBtn').textContent='更新中…'}
- setStatus('更新中','warn');addLog(`v1.2.5 ${season}年度のデータ取得を開始`);
+ setStatus('更新中','warn');addLog(`v1.2.6 ${season}年度のデータ取得を開始`);
  let fullHistory=false,success=0;
  try{
   const [centralHist,pacificHist,schedules,starters]=await Promise.all([
@@ -479,17 +479,37 @@ async function refreshLiveScores(){
   try{
    const liveData=await fetchJson(`${API.base}/api/score`,10000);
    if(liveData&&Array.isArray(liveData))liveGames=liveData;
+   // デバッグ: APIレスポンスの最初の試合をログに出力
+   if(liveGames.length>0){
+    const first=liveGames[0];
+    console.log('[DEBUG] live_games API first game:',JSON.stringify({
+     H_Score_NameS:first.H_Score_NameS,HomeTeamNameS:first.HomeTeamNameS,homeTeamName:first.homeTeamName,
+     V_Score_NameS:first.V_Score_NameS,VisitorTeamNameS:first.VisitorTeamNameS,awayTeamName:first.awayTeamName,
+     GameStateName:first.GameStateName,gameStateName:first.gameStateName,status:first.status,
+     H_Score_R:first.H_Score_R,V_Score_R:first.V_Score_R,Inning:first.Inning,TB:first.TB
+    }));
+    addLog(`live_games API: ${liveGames.length}試合取得`);
+   }else{
+    addLog('live_games API: 0試合');
+   }
   }catch(e){addLog('ライブ速報: live_games API取得失敗 '+e.message)}
 
   candidates.forEach(g=>{
    const homeName=TEAM[g.home]?.name||'';
    const awayName=TEAM[g.away]?.name||'';
+   // チーム名の部分一致マッチング（APIの表記揺れに対応）
    const live=liveGames.find(l=>{
     const h=String(l.H_Score_NameS||l.HomeTeamNameS||l.homeTeamName||'');
     const v=String(l.V_Score_NameS||l.VisitorTeamNameS||l.awayTeamName||'');
-    return (h===homeName&&v===awayName)||(h===awayName&&v===homeName);
+    const homeMatch=h===homeName||h.includes(homeName)||homeName.includes(h);
+    const awayMatch=v===awayName||v.includes(awayName)||awayName.includes(v);
+    const reverseMatch=h===awayName||h.includes(awayName)||awayName.includes(h)||v===homeName||v.includes(homeName)||homeName.includes(v);
+    return (homeMatch&&awayMatch)||reverseMatch;
    });
-   if(!live)return;
+   if(!live){
+    console.log(`[DEBUG] No match for ${homeName} vs ${awayName}. Available:`,liveGames.map(l=>`${l.H_Score_NameS||l.HomeTeamNameS||l.homeTeamName} vs ${l.V_Score_NameS||l.VisitorTeamNameS||l.awayTeamName}`));
+    return;
+   }
    const liveHome=optionalNum(val(live,['H_Score_R','homeScore','HScore','home_team_runs']));
    const liveAway=optionalNum(val(live,['V_Score_R','awayScore','VScore','away_team_runs']));
    const liveInning=optionalNum(val(live,['Inning','inning','currentInning']));
@@ -498,6 +518,7 @@ async function refreshLiveScores(){
    if(liveSideRaw==='1'||/^(t|top|表)/i.test(liveSideRaw))liveSide='表';
    else if(liveSideRaw==='2'||/^(b|bottom|bot|裏)/i.test(liveSideRaw))liveSide='裏';
    const liveStateRaw=String(val(live,['GameStateName','gameStateName','status'],'')||'');
+   console.log(`[DEBUG] ${homeName} vs ${awayName} state: "${liveStateRaw}"`);
    const nowFinal=liveStateRaw==='試合終了'||liveStateRaw==='Finished'||liveStateRaw==='Final';
    const nowCancelled=liveStateRaw==='試合中止'||liveStateRaw==='Cancelled'||liveStateRaw==='No Game';
    if(liveHome!==null)g.homeScore=liveHome;
