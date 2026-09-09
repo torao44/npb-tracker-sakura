@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<meta name="app-version" content="1.2.2">
+<meta name="app-version" content="1.2.3">
 <meta name="app-updated" content="2026-09-08">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%BE%3C/text%3E%3C/svg%3E">
 <title>NPB シーズントラッカー</title>
@@ -183,7 +183,7 @@ footer{max-width:1240px;margin:0 auto;padding:1.2rem var(--space) 2.5rem;color:v
   </section>
 </main>
 <footer>
-  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem"><span>このファイルはブラウザ内にデータを保存します。</span><span style="font-family:ui-monospace,monospace">v1.2.2 (2026-09-08)</span></div><div style="margin-top:.3rem">ページを閉じている間も確実に動収集するには、Cron対応のサーバーまたはCloudflare Worker等への配置が必要です。外部データ提供元の仕様変更・停止時は更新できない場合あります。
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem"><span>このファイルはブラウザ内にデータを保存します。</span><span style="font-family:ui-monospace,monospace">v1.2.3 (2026-09-09)</span></div><div style="margin-top:.3rem">ページを閉じている間も確実に動収集するには、Cron対応のサーバーまたはCloudflare Worker等への配置が必要です。外部データ提供元の仕様変更・停止時は更新できない場合あります。
   </div>
 </footer>
 
@@ -281,7 +281,7 @@ async function refreshAll(){
   else{showNotice('サーバー接続エラー','サーバーからの取得に失敗しました。設定タブでURLを確認してください。');return}
  }
  if($('#refreshBtn')){$('#refreshBtn').disabled=true;$('#refreshBtn').textContent='更新中…'}
- setStatus('更新中','warn');addLog(`v1.2.2 ${season}年度のデータ取得を開始`);
+ setStatus('更新中','warn');addLog(`v1.2.3 ${season}年度のデータ取得を開始`);
  let fullHistory=false,success=0;
  try{
   const [centralHist,pacificHist,schedules,starters]=await Promise.all([
@@ -362,21 +362,21 @@ function normalizeUpcoming(raw){
   let homePitcher=String(val(g,homePitcherKeys,'')||'').trim(),awayPitcher=String(val(g,awayPitcherKeys,'')||'').trim();
   if(['null','undefined'].includes(homePitcher.toLowerCase()))homePitcher='';if(['null','undefined'].includes(awayPitcher.toLowerCase()))awayPitcher='';
 
-  const stateRaw=String(val(g,['gameStateName','GameStateName','GameStateNameS','GAME_STATE_NAME','status','Status','STATUS','gameStatus','GameStatus','GAME_STATUS','stateText','StateText'],'')||'').trim();
+  const stateRaw=String(val(g,['GameStateName','gameStateName','GameStateNameS','GAME_STATE_NAME','status','Status','STATUS','gameStatus','GameStatus','GAME_STATUS','stateText','StateText'],'')||'').trim();
   const stateText=stateRaw.toLowerCase();
   const gameState=optionalNum(val(g,['GameState','gameState','GAME_STATE']));
   const gameResult=optionalNum(val(g,['GameResult','gameResult','GAME_RESULT']));
-  const homeScore=optionalNum(val(g,['homeTeamTotalRuns','HomeTeamTotalRuns','HOME_SCORE','homeScore','HomeScore','HTeamScore','HomeTeamScore','HomeTeamTotalScore','HomeTotalScore','HScore','H_POINT','Home_Point','Home_Runs']));
-  const awayScore=optionalNum(val(g,['visitorTeamTotalRuns','VisitorTeamTotalRuns','awayTeamTotalRuns','AWAY_SCORE','awayScore','visitorScore','AwayScore','VTeamScore','VisitorTeamScore','VisitorTeamTotalScore','AwayTeamScore','AwayTeamTotalScore','VisitorTotalScore','VScore','V_POINT','Visitor_Point','Away_Runs']));
+  const homeScore=optionalNum(val(g,['H_Score_R','homeTeamTotalRuns','HomeTeamTotalRuns','HOME_SCORE','homeScore','HomeScore','HTeamScore','HomeTeamScore','HomeTeamTotalScore','HomeTotalScore','HScore','H_POINT','Home_Point','Home_Runs']));
+  const awayScore=optionalNum(val(g,['V_Score_R','visitorTeamTotalRuns','VisitorTeamTotalRuns','awayTeamTotalRuns','AWAY_SCORE','awayScore','visitorScore','AwayScore','VTeamScore','VisitorTeamScore','VisitorTeamTotalScore','AwayTeamScore','AwayTeamTotalScore','VisitorTotalScore','VScore','V_POINT','Visitor_Point','Away_Runs']));
 
   let statusDetail=String(val(g,['statusDetail','StatusDetail','gameStatusDetail','GameStatusDetail','inningText','InningText','INNING_TEXT','Situation','SITUATION'],'')||'').trim();
-  let inning=optionalNum(val(g,['inning','Inning','currentInning','CurrentInning','CURRENT_INNING','GameInning','GAME_INNING','NowInning','CurrentRound','Round','ROUND']));
-  let inningSide=String(val(g,['inningSide','InningSide','topBottom','TopBottom','TOP_BOTTOM','inningTopBottom','InningTopBottom','NowTopBottom','TopOrBottom','TB'],'')||'').trim();
+  let inning=optionalNum(val(g,['Inning','inning','CurrentInning','currentInning','CURRENT_INNING','GameInning','GAME_INNING','NowInning','CurrentRound','Round','ROUND']));
+  let inningSide=String(val(g,['TB','inningSide','InningSide','topBottom','TopBottom','TOP_BOTTOM','inningTopBottom','InningTopBottom','NowTopBottom','TopOrBottom'],'')||'').trim();
   const combined=`${stateRaw} ${statusDetail}`;
   const inningMatch=combined.match(/(\d{1,2})\s*回\s*(表|裏)?/);
   if(inning===null&&inningMatch)inning=Number(inningMatch[1]);
   if(!inningSide&&inningMatch?.[2])inningSide=inningMatch[2];
-  if(/^(t|top|1)$|表|先攻/i.test(inningSide))inningSide='表';else if(/^(b|bottom|bot|2)$|裏|後攻/i.test(inningSide))inningSide='裏';else inningSide='';
+  if(/^(t|top|1)$|表|先攻/i.test(inningSide))inningSide='表';else if(/^(b|bottom|bot|2)$|裏|後攻/i.test(inningSide))inningSide='裏';else if(inningSide==='1')inningSide='表';else if(inningSide==='2')inningSide='裏';else inningSide='';
 
   // イニングは現実的な範囲に制限（NPBレギュラーシーズンは通常9回、延長でも15回までが現実的）
   const validInning=inning!==null&&inning>=1&&inning<=15;
