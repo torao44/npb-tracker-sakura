@@ -1,5 +1,5 @@
 // /api/score.js - Fetch live score for a specific game from SPAIA
-import { createResponse } from "../functions/_lib/proxy.js";
+import { createResponse } from "../_lib/proxy.js";
 
 export async function onRequest(context) {
   const { request, env } = context;
