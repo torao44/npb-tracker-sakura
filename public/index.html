@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<meta name="app-version" content="1.2.7">
+<meta name="app-version" content="1.2.9">
 <meta name="app-updated" content="2026-09-08">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%BE%3C/text%3E%3C/svg%3E">
 <title>NPB シーズントラッカー</title>
@@ -183,7 +183,7 @@ footer{max-width:1240px;margin:0 auto;padding:1.2rem var(--space) 2.5rem;color:v
   </section>
 </main>
 <footer>
-  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem"><span>このファイルはブラウザ内にデータを保存します。</span><span style="font-family:ui-monospace,monospace">v1.2.7 (2026-09-09)</span></div><div style="margin-top:.3rem">ページを閉じている間も確実に動収集するには、Cron対応のサーバーまたはCloudflare Worker等への配置が必要です。外部データ提供元の仕様変更・停止時は更新できない場合あります。
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem"><span>このファイルはブラウザ内にデータを保存します。</span><span style="font-family:ui-monospace,monospace">v1.2.9 (2026-09-09)</span></div><div style="margin-top:.3rem">ページを閉じている間も確実に動収集するには、Cron対応のサーバーまたはCloudflare Worker等への配置が必要です。外部データ提供元の仕様変更・停止時は更新できない場合あります。
   </div>
 </footer>
 
@@ -281,7 +281,7 @@ async function refreshAll(){
   else{showNotice('サーバー接続エラー','サーバーからの取得に失敗しました。設定タブでURLを確認してください。');return}
  }
  if($('#refreshBtn')){$('#refreshBtn').disabled=true;$('#refreshBtn').textContent='更新中…'}
- setStatus('更新中','warn');addLog(`v1.2.7 ${season}年度のデータ取得を開始`);
+ setStatus('更新中','warn');addLog(`v1.2.9 ${season}年度のデータ取得を開始`);
  let fullHistory=false,success=0;
  try{
   const [centralHist,pacificHist,schedules,starters]=await Promise.all([
@@ -387,7 +387,7 @@ function normalizeUpcoming(raw){
   const textFinal=stateText.includes('終了')||stateText.includes('試合済')||stateText.includes('final')||stateText.includes('game set');
   // 昨日以前の試合は確実に終了扱い（schedules APIのgameStateが信頼できないため）
   const isPastGame=gameDate<now.date;
-  const isFinal=isPastGame||(!isCancelled&&!isSuspended&&(textFinal||gameState===2||gameResult===2));
+  const isFinal=isPastGame||(!isCancelled&&!isSuspended&&gameDate!==now.date&&(gameState===2||gameResult===2));
   const inningSuggestsLive=validInning&&inning>0&&!isFinal&&!isCancelled&&gameDate===now.date;
   // 得点が入っているからといって進行中とは限らない（終了後も得点は残る）
   const isLive=!isFinal&&!isCancelled&&gameDate===now.date&&(isSuspended||stateText.includes('進行中')||stateText.includes('試合中')||stateText.includes('live')||gameState===1||inningSuggestsLive);
@@ -442,7 +442,11 @@ function mergeScheduleGames(oldGames,newGames){
  const oldMap=new Map((oldGames||[]).map(g=>[gameKey(g),g]));
  return (newGames||[]).map(g=>{
   const old=oldMap.get(gameKey(g));if(!old)return g;
-  return {...old,...g,homePitcher:g.homePitcher||old.homePitcher||'',awayPitcher:g.awayPitcher||old.awayPitcher||'',pitcherSource:old.pitcherSource||g.pitcherSource||''};
+  // ライブ状態関連フィールドは新しいデータを優先（古いisFinalで上書きされないように）
+  const liveFields=['isFinal','isLive','isCancelled','statusDetail','inning','inningSide','validInning','homeScore','awayScore','scoreUpdatedAt'];
+  const merged={...old,...g,homePitcher:g.homePitcher||old.homePitcher||'',awayPitcher:g.awayPitcher||old.awayPitcher||'',pitcherSource:old.pitcherSource||g.pitcherSource||''};
+  for(const f of liveFields){if(g[f]!==undefined&&g[f]!==null)merged[f]=g[f]}
+  return merged;
  });
 }
 function currentUpcoming(){return state?.upcoming?.length?state.upcoming:(serverPayload?.upcoming||[])}
