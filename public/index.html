@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<meta name="app-version" content="1.2.4">
+<meta name="app-version" content="1.2.5">
 <meta name="app-updated" content="2026-09-08">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%BE%3C/text%3E%3C/svg%3E">
 <title>NPB シーズントラッカー</title>
@@ -183,7 +183,7 @@ footer{max-width:1240px;margin:0 auto;padding:1.2rem var(--space) 2.5rem;color:v
   </section>
 </main>
 <footer>
-  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem"><span>このファイルはブラウザ内にデータを保存します。</span><span style="font-family:ui-monospace,monospace">v1.2.4 (2026-09-09)</span></div><div style="margin-top:.3rem">ページを閉じている間も確実に動収集するには、Cron対応のサーバーまたはCloudflare Worker等への配置が必要です。外部データ提供元の仕様変更・停止時は更新できない場合あります。
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem"><span>このファイルはブラウザ内にデータを保存します。</span><span style="font-family:ui-monospace,monospace">v1.2.5 (2026-09-09)</span></div><div style="margin-top:.3rem">ページを閉じている間も確実に動収集するには、Cron対応のサーバーまたはCloudflare Worker等への配置が必要です。外部データ提供元の仕様変更・停止時は更新できない場合あります。
   </div>
 </footer>
 
@@ -281,7 +281,7 @@ async function refreshAll(){
   else{showNotice('サーバー接続エラー','サーバーからの取得に失敗しました。設定タブでURLを確認してください。');return}
  }
  if($('#refreshBtn')){$('#refreshBtn').disabled=true;$('#refreshBtn').textContent='更新中…'}
- setStatus('更新中','warn');addLog(`v1.2.4 ${season}年度のデータ取得を開始`);
+ setStatus('更新中','warn');addLog(`v1.2.5 ${season}年度のデータ取得を開始`);
  let fullHistory=false,success=0;
  try{
   const [centralHist,pacificHist,schedules,starters]=await Promise.all([
@@ -498,17 +498,21 @@ async function refreshLiveScores(){
    if(liveSideRaw==='1'||/^(t|top|表)/i.test(liveSideRaw))liveSide='表';
    else if(liveSideRaw==='2'||/^(b|bottom|bot|裏)/i.test(liveSideRaw))liveSide='裏';
    const liveStateRaw=String(val(live,['GameStateName','gameStateName','status'],'')||'');
-   const nowFinal=String(liveStateRaw).includes('終了')||String(live.GameStateName).includes('終了');
-   const nowCancelled=String(liveStateRaw).includes('中止')||String(live.GameStateName).includes('中止');
+   const nowFinal=liveStateRaw==='試合終了'||liveStateRaw==='Finished'||liveStateRaw==='Final';
+   const nowCancelled=liveStateRaw==='試合中止'||liveStateRaw==='Cancelled'||liveStateRaw==='No Game';
    if(liveHome!==null)g.homeScore=liveHome;
    if(liveAway!==null)g.awayScore=liveAway;
    if(liveInning!==null&&liveInning>=1&&liveInning<=15){
     g.inning=liveInning;g.inningSide=liveSide;g.validInning=true;
-    if(!g.isFinal&&!g.isCancelled)g.statusDetail=`${liveInning}回${liveSide}`;
    }
    if(nowFinal){g.isFinal=true;g.isLive=false;g.statusDetail='試合終了';}
    else if(nowCancelled){g.isCancelled=true;g.isLive=false;g.statusDetail='試合中止';}
-   else if(!g.isFinal&&!g.isCancelled){g.isLive=true;}
+   else {
+    g.isFinal=false;g.isCancelled=false;g.isLive=true;
+    if(liveInning!==null&&liveInning>=1&&liveInning<=15){
+     g.statusDetail=`${liveInning}回${liveSide}`;
+    }
+   }
    g.scoreUpdatedAt=new Date().toISOString();
   });
 
