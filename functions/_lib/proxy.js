@@ -1,3 +1,15 @@
+export function createResponse(body, status = 200, extraHeaders = {}) {
+  const headers = new Headers({
+    "Content-Type": "application/json; charset=utf-8",
+    "Cache-Control": "public, max-age=30",
+    "X-Content-Type-Options": "nosniff"
+  });
+  for (const [key, value] of Object.entries(extraHeaders)) {
+    headers.set(key, value);
+  }
+  return new Response(JSON.stringify(body), { status, headers });
+}
+
 export async function proxyJson(context, upstreamBase, cacheSeconds = 300) {
   const requestUrl = new URL(context.request.url);
   const upstreamUrl = new URL(upstreamBase);
