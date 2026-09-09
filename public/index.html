@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<meta name="app-version" content="1.2.9">
+<meta name="app-version" content="1.3.1">
 <meta name="app-updated" content="2026-09-08">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%BE%3C/text%3E%3C/svg%3E">
 <title>NPB シーズントラッカー</title>
@@ -183,7 +183,7 @@ footer{max-width:1240px;margin:0 auto;padding:1.2rem var(--space) 2.5rem;color:v
   </section>
 </main>
 <footer>
-  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem"><span>このファイルはブラウザ内にデータを保存します。</span><span style="font-family:ui-monospace,monospace">v1.2.9 (2026-09-09)</span></div><div style="margin-top:.3rem">ページを閉じている間も確実に動収集するには、Cron対応のサーバーまたはCloudflare Worker等への配置が必要です。外部データ提供元の仕様変更・停止時は更新できない場合あります。
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem"><span>このファイルはブラウザ内にデータを保存します。</span><span style="font-family:ui-monospace,monospace">v1.3.1 (2026-09-09)</span></div><div style="margin-top:.3rem">ページを閉じている間も確実に動収集するには、Cron対応のサーバーまたはCloudflare Worker等への配置が必要です。外部データ提供元の仕様変更・停止時は更新できない場合あります。
   </div>
 </footer>
 
@@ -281,7 +281,7 @@ async function refreshAll(){
   else{showNotice('サーバー接続エラー','サーバーからの取得に失敗しました。設定タブでURLを確認してください。');return}
  }
  if($('#refreshBtn')){$('#refreshBtn').disabled=true;$('#refreshBtn').textContent='更新中…'}
- setStatus('更新中','warn');addLog(`v1.2.9 ${season}年度のデータ取得を開始`);
+ setStatus('更新中','warn');addLog(`v1.3.1 ${season}年度のデータ取得を開始`);
  let fullHistory=false,success=0;
  try{
   const [centralHist,pacificHist,schedules,starters]=await Promise.all([
@@ -387,7 +387,7 @@ function normalizeUpcoming(raw){
   const textFinal=stateText.includes('終了')||stateText.includes('試合済')||stateText.includes('final')||stateText.includes('game set');
   // 昨日以前の試合は確実に終了扱い（schedules APIのgameStateが信頼できないため）
   const isPastGame=gameDate<now.date;
-  const isFinal=isPastGame||(!isCancelled&&!isSuspended&&gameDate!==now.date&&(gameState===2||gameResult===2));
+  const isFinal=gameDate<now.date&&(!isCancelled&&!isSuspended&&(gameState===2||gameResult===2));
   const inningSuggestsLive=validInning&&inning>0&&!isFinal&&!isCancelled&&gameDate===now.date;
   // 得点が入っているからといって進行中とは限らない（終了後も得点は残る）
   const isLive=!isFinal&&!isCancelled&&gameDate===now.date&&(isSuspended||stateText.includes('進行中')||stateText.includes('試合中')||stateText.includes('live')||gameState===1||inningSuggestsLive);
@@ -477,29 +477,42 @@ async function refreshLiveScores(){
   fresh=mergeScheduleGames(currentUpcoming(),fresh);
 
   const now=getJstParts();
-  // 当日の試合はすべてライブ更新対象（normalizeUpcomingでisFinalになっていても上書きする）
+  // 当日の試合はすべてライブ更新対象
   const candidates=fresh.filter(g=>g.date===now.date);
+  console.log('[DEBUG] candidates:',candidates.map(g=>`${g.date} ${TEAM[g.home]?.name}vs${TEAM[g.away]?.name} isFinal=${g.isFinal} isLive=${g.isLive}`));
 
   let liveGames=[];
   try{
    const liveData=await fetchJson(`${API.base}/api/score`,10000);
    if(liveData&&Array.isArray(liveData))liveGames=liveData;
+   console.log('[DEBUG] live_games API:',liveGames.length,'games');
+   console.log('[DEBUG] live_games first:',liveGames[0]?{H:liveGames[0].H_Score_NameS,V:liveGames[0].V_Score_NameS,HR:liveGames[0].H_Score_R,VR:liveGames[0].V_Score_R,State:liveGames[0].GameStateName}:null);
    addLog(`live_games API: ${liveGames.length}試合取得`);
   }catch(e){addLog('ライブ速報: live_games API取得失敗 '+e.message)}
 
   candidates.forEach(g=>{
    const homeName=TEAM[g.home]?.name||'';
    const awayName=TEAM[g.away]?.name||'';
-   // チーム名の部分一致マッチング（APIの表記揺れに対応）
-   const live=liveGames.find(l=>{
-    const h=String(l.H_Score_NameS||l.HomeTeamNameS||l.homeTeamName||'');
-    const v=String(l.V_Score_NameS||l.VisitorTeamNameS||l.awayTeamName||'');
-    const homeMatch=h===homeName||h.includes(homeName)||homeName.includes(h);
-    const awayMatch=v===awayName||v.includes(awayName)||awayName.includes(v);
-    const reverseMatch=h===awayName||h.includes(awayName)||awayName.includes(h)||v===homeName||v.includes(homeName)||homeName.includes(v);
-    return (homeMatch&&awayMatch)||reverseMatch;
+   console.log(`[DEBUG] Matching ${homeName} vs ${awayName} (gameId=${g.id})`);
+   // 1. まずGameIDでの一致を試す（最も確実）
+   const gameIdStr=String(g.id||'');
+   let live=liveGames.find(l=>{
+    const liveId=String(val(l,['GameID','GameId','gameId','GAME_ID'],'')||'');
+    return liveId&&gameIdStr&&liveId===gameIdStr;
    });
-   if(!live)return;
+   if(live)console.log(`[DEBUG] MATCH by GameID: ${gameIdStr}`);
+   // 2. GameIDで見つからない場合のみ、チーム名の完全一致（両者とも一致）にフォールバック
+   //    ※以前は片側だけの部分一致(reverseMatch)で誤って別の試合を拾ってしまうことがあった
+   if(!live){
+    live=liveGames.find(l=>{
+     const h=String(l.H_Score_NameS||l.HomeTeamNameS||l.homeTeamName||'');
+     const v=String(l.V_Score_NameS||l.VisitorTeamNameS||l.awayTeamName||'');
+     const match=(h===homeName&&v===awayName)||(h===awayName&&v===homeName);
+     if(match)console.log(`[DEBUG] MATCH by name (fallback): ${h} vs ${v} -> ${homeName} vs ${awayName}`);
+     return match;
+    });
+   }
+   if(!live){console.log(`[DEBUG] NO MATCH for ${homeName} vs ${awayName}`);return}
    const liveHome=optionalNum(val(live,['H_Score_R','homeScore','HScore','home_team_runs']));
    const liveAway=optionalNum(val(live,['V_Score_R','awayScore','VScore','away_team_runs']));
    const liveInning=optionalNum(val(live,['Inning','inning','currentInning']));
@@ -508,6 +521,7 @@ async function refreshLiveScores(){
    if(liveSideRaw==='1'||/^(t|top|表)/i.test(liveSideRaw))liveSide='表';
    else if(liveSideRaw==='2'||/^(b|bottom|bot|裏)/i.test(liveSideRaw))liveSide='裏';
    const liveStateRaw=String(val(live,['GameStateName','gameStateName','status'],'')||'');
+   console.log(`[DEBUG] ${homeName}vs${awayName} state="${liveStateRaw}" H=${liveHome} V=${liveAway} inning=${liveInning}`);
    const nowFinal=liveStateRaw==='試合終了'||liveStateRaw==='Finished'||liveStateRaw==='Final';
    const nowCancelled=liveStateRaw==='試合中止'||liveStateRaw==='Cancelled'||liveStateRaw==='No Game';
    if(liveHome!==null)g.homeScore=liveHome;
@@ -526,12 +540,13 @@ async function refreshLiveScores(){
     }
    }
    g.scoreUpdatedAt=new Date().toISOString();
+   console.log(`[DEBUG] Updated ${homeName}vs${awayName}: isFinal=${g.isFinal} isLive=${g.isLive} status=${g.statusDetail}`);
   });
 
   state.upcoming=fresh;if(serverPayload)serverPayload.upcoming=fresh;
   state.meta.liveFetch=new Date().toISOString();saveState();renderUpcoming();
   const liveCount=fresh.filter(g=>g.isLive).length;
-  addLog(liveCount?`ライブ速報を更新: 進中 ${liveCount}試合`:'試合状況を新');
+  addLog(liveCount?`ライブ速報を更新: 進中 ${liveCount}試合`:'試合状況を更新');
  }catch(e){console.error('refreshLiveScores error:',e);addLog(`ライブ速報の更新失敗: ${e.message}`)}
  finally{liveRefreshing=false;scheduleLiveRefresh()}
 }
