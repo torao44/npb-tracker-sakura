@@ -71,6 +71,21 @@ export async function onRequest(context) {
       return true;
     });
 
+    if (requestUrl.searchParams.get("debug") === "1") {
+      const live = allGames.find(g => JSON.stringify(g).includes("進行中")) || null;
+      const withGiants = allGames.find(g => JSON.stringify(g).includes("巨人")) || null;
+      return createResponse(
+        {
+          rawCount: allGames.length,
+          todayStr,
+          first3: allGames.slice(0, 3),
+          liveSample: live,
+          giantsSample: withGiants
+        },
+        200
+      );
+    }
+
     if (!gameId) {
       return createResponse(todaysGames, response.status, {
         "X-Raw-Count": String(allGames.length),
