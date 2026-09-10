@@ -493,25 +493,18 @@ async function refreshLiveScores(){
   candidates.forEach(g=>{
    const homeName=TEAM[g.home]?.name||'';
    const awayName=TEAM[g.away]?.name||'';
-   console.log(`[DEBUG] Matching ${homeName} vs ${awayName} (gameId=${g.id})`);
-   // 1. まずGameIDでの一致を試す（最も確実）
-   const gameIdStr=String(g.id||'');
-   let live=liveGames.find(l=>{
-    const liveId=String(val(l,['GameID','GameId','gameId','GAME_ID'],'')||'');
-    return liveId&&gameIdStr&&liveId===gameIdStr;
+   console.log(`[DEBUG] Matching ${homeName} vs ${awayName}`);
+   // チーム名の部分一致マッチング
+   const live=liveGames.find(l=>{
+    const h=String(l.H_Score_NameS||l.HomeTeamNameS||l.homeTeamName||'');
+    const v=String(l.V_Score_NameS||l.VisitorTeamNameS||l.awayTeamName||'');
+    const homeMatch=h===homeName||h.includes(homeName)||homeName.includes(h);
+    const awayMatch=v===awayName||v.includes(awayName)||awayName.includes(v);
+    const reverseMatch=h===awayName||h.includes(awayName)||awayName.includes(h)||v===homeName||v.includes(homeName)||homeName.includes(v);
+    const match=(homeMatch&&awayMatch)||reverseMatch;
+    if(match)console.log(`[DEBUG] MATCH: ${h} vs ${v} -> ${homeName} vs ${awayName}`);
+    return match;
    });
-   if(live)console.log(`[DEBUG] MATCH by GameID: ${gameIdStr}`);
-   // 2. GameIDで見つからない場合のみ、チーム名の完全一致（両者とも一致）にフォールバック
-   //    ※以前は片側だけの部分一致(reverseMatch)で誤って別の試合を拾ってしまうことがあった
-   if(!live){
-    live=liveGames.find(l=>{
-     const h=String(l.H_Score_NameS||l.HomeTeamNameS||l.homeTeamName||'');
-     const v=String(l.V_Score_NameS||l.VisitorTeamNameS||l.awayTeamName||'');
-     const match=(h===homeName&&v===awayName)||(h===awayName&&v===homeName);
-     if(match)console.log(`[DEBUG] MATCH by name (fallback): ${h} vs ${v} -> ${homeName} vs ${awayName}`);
-     return match;
-    });
-   }
    if(!live){console.log(`[DEBUG] NO MATCH for ${homeName} vs ${awayName}`);return}
    const liveHome=optionalNum(val(live,['H_Score_R','homeScore','HScore','home_team_runs']));
    const liveAway=optionalNum(val(live,['V_Score_R','awayScore','VScore','away_team_runs']));
