@@ -1,200 +1,76 @@
-export async function onRequestGet(context) {
+import { createResponse } from "../_lib/proxy.js";
+
+export async function onRequest(context) {
+  const requestUrl = new URL(context.request.url);
+  const gameId = requestUrl.searchParams.get("gameId");
+
+  // SPAIA live_games APIから全試合データを取得
+  const upstreamUrl = "https://spaia.jp/baseball/npb/api/live_games";
+
   try {
-    console.log('[YahooScore] Fetching from baseball.yahoo.co.jp/npb/schedule/');
-
-    const response = await fetch('https://baseball.yahoo.co.jp/npb/schedule/', {
+    const response = await fetch(upstreamUrl, {
+      method: "GET",
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'ja,en-US;q=0.9,en;q=0.8',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Connection': 'keep-alive',
+        "Accept": "application/json",
+        "User-Agent": "NPB-Season-Tracker/1.3.3"
       },
-    });
-
-    if (!response.ok) {
-      console.log('[YahooScore] Fetch failed:', response.status, response.statusText);
-      return new Response(JSON.stringify({ error: 'Failed to fetch from Yahoo', status: response.status }), {
-        status: 502,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-        },
-      });
-    }
-
-    const html = await response.text();
-    console.log('[YahooScore] HTML length:', html.length);
-
-    const games = parseYahooScheduleHtml(html);
-    console.log('[YahooScore] Parsed games:', games.length);
-
-    return new Response(JSON.stringify(games), {
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'public, max-age=30',
-        'Access-Control-Allow-Origin': '*',
-      },
-    });
-  } catch (err) {
-    console.log('[YahooScore] Error:', err.message);
-    return new Response(JSON.stringify({ error: err.message, stack: err.stack }), {
-      status: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-      },
-    });
-  }
-}
-
-const TEAM_INFO = {
-  '巨人': { id: 1, league: 'central', full: '読売ジャイアンツ' },
-  'DeNA': { id: 376, league: 'central', full: '横浜DeNAベイスターズ' },
-  'ヤクルト': { id: 2, league: 'central', full: '東京ヤクルトスワローズ' },
-  '阪神': { id: 5, league: 'central', full: '阪神タイガース' },
-  '広島': { id: 6, league: 'central', full: '広島東洋カープ' },
-  '中日': { id: 4, league: 'central', full: '中日ドラゴンズ' },
-  '西武': { id: 7, league: 'pacific', full: '埼玉西武ライオンズ' },
-  '日本ハム': { id: 8, league: 'pacific', full: '北海道日本ハムファイターズ' },
-  'ロッテ': { id: 9, league: 'pacific', full: '千葉ロッテマリーンズ' },
-  'オリックス': { id: 11, league: 'pacific', full: 'オリックス・バファローズ' },
-  'ソフトバク': { id: 12, league: 'pacific', full: '福岡ソフトバンクホークス' },
-  '楽天': { id: 376, league: 'pacific', full: '東北楽天ゴールデンイーグルス' },
-};
-
-const TEAM_NAMES = Object.keys(TEAM_INFO);
-const EXCLUDED_TEAMS = ['オイシックス', 'ハヤテ', 'くふう'];
-
-function parseYahooScheduleHtml(html) {
-  const games = [];
-
-  // HTMLタグ除去
-  let text = html
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ' ')
-    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, ' ')
-    .replace(/>/g, '> ')
-    .replace(/</g, ' <')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/\s+/g, ' ')
-    .replace(/\n+/g, '\n');
-
-  // 「本の試合」セクションだけ抽出（「本日の試合」より前の部分）
-  const todayMarker = '本日の試合';
-  const todayIdx = text.indexOf(todayMarker);
-  if (todayIdx !== -1) {
-    text = text.substring(0, todayIdx);
-  }
-
-  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-  console.log('[YahooScore] Text lines (today section):', lines.length);
-
-  for (const line of lines) {
-    // スコアパターン: "数字 - 数字"
-    const scoreMatch = line.match(/(\d+)\s*[-－]\s*(\d+)/);
-    if (!scoreMatch) continue;
-
-    const rawScore1 = scoreMatch[1];
-    const rawScore2 = scoreMatch[2];
-
-    // 状態判定
-    let statusDetail = '';
-    let isLive = false;
-    let isFinal = false;
-    let isCancelled = false;
-    let inning = null;
-    let inningSide = null;
-
-    if (line.includes('試合終')) {
-      statusDetail = '試合終了';
-      isFinal = true;
-    } else if (line.includes('試合中止')) {
-      statusDetail = '試合中止';
-      isCancelled = true;
-    } else if (line.includes('試合前')) {
-      statusDetail = '試合前';
-    } else if (line.includes('予告先発')) {
-      statusDetail = '予告先発';
-    } else {
-      const inningMatch = line.match(/(\d+)回(表|裏)/);
-      if (inningMatch) {
-        statusDetail = inningMatch[0];
-        isLive = true;
-        inning = parseInt(inningMatch[1], 10);
-        inningSide = inningMatch[2] === '表' ? 'top' : 'bottom';
+      cf: {
+        cacheEverything: true,
+        cacheTtl: 30
       }
-    }
-
-    if (!statusDetail) continue;
-
-    // チーム名抽出（連結対応）
-    const teams = extractTeamsFromLine(line);
-    if (teams.length < 2) {
-      console.log('[YahooScore] Could not extract 2 teams from:', line.substring(0, 100));
-      continue;
-    }
-
-    // 除外チーム（ファーム・独立リーグ）を含む場合はスキップ
-    const hasExcluded = teams.some(t =>
-      EXCLUDED_TEAMS.some(ex => t.includes(ex))
-    );
-    if (hasExcluded) {
-      console.log('[YahooScore] Excluded farm/indie game:', teams.join(' vs '));
-      continue;
-    }
-
-    const [awayTeam, homeTeam] = teams;
-    const awayScore = parseInt(rawScore1, 10);
-    const homeScore = parseInt(rawScore2, 10);
-
-    const info = TEAM_INFO[homeTeam];
-
-    games.push({
-      homeTeam,
-      awayTeam,
-      homeScore,
-      awayScore,
-      inning,
-      inningSide,
-      isLive,
-      isFinal,
-      isCancelled,
-      statusDetail,
-      league: info ? info.league : 'unknown',
-      _source: 'yahoo',
     });
-  }
 
-  return games;
-}
+    const allGames = await response.json();
 
-function extractTeamsFromLine(line) {
-  const matches = [];
-
-  for (const name of TEAM_NAMES) {
-    let idx = line.indexOf(name);
-    while (idx !== -1) {
-      matches.push({ name, index: idx });
-      idx = line.indexOf(name, idx + 1);
+    if (!Array.isArray(allGames)) {
+      return createResponse({ ok: false, error: "Invalid response from upstream" }, 502);
     }
-  }
 
-  // 出現位置順にソート
-  matches.sort((a, b) => a.index - b.index);
+    // 当日（JST）の日付文字列を生成 (YYYYMMDD)
+    const now = new Date();
+    const jstDate = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Tokyo" }));
+    const year = jstDate.getFullYear();
+    const month = String(jstDate.getMonth() + 1).padStart(2, "0");
+    const day = String(jstDate.getDate()).padStart(2, "0");
+    const todayStr = `${year}${month}${day}`;
 
-  // 重複除去（同じ名前が複数回出てくる場合は最初の1つだけ）
-  const unique = [];
-  const seen = new Set();
-  for (const m of matches) {
-    if (!seen.has(m.name)) {
-      seen.add(m.name);
-      unique.push(m.name);
+    const todaysGames = allGames.filter(g => {
+      // 1. GameIDの先頭8文字が日付 (例: 2026091012345)
+      const gameIdStr = String(g.GameID || "");
+      if (gameIdStr.length >= 8 && /^\d{8}/.test(gameIdStr)) {
+        return gameIdStr.substring(0, 8) === todayStr;
+      }
+
+      // 2. DateJPNフィールド (例: "2026-09-10" または "20260910")
+      const dateJpn = String(g.DateJPN || g.dateJPN || g.DATE_JPN || "").replace(/-/g, "");
+      if (dateJpn.length >= 8) {
+        return dateJpn.substring(0, 8) === todayStr;
+      }
+
+      // 3. gameDateフィールド (例: "2026-09-10" または "20260910")
+      const gameDateField = String(g.gameDate || g.GAME_DATE || "").replace(/-/g, "");
+      if (gameDateField.length >= 8) {
+        return gameDateField.substring(0, 8) === todayStr;
+      }
+
+      // 4. 日付情報がない場合は含める（フィルタリングしない）
+      return true;
+    });
+
+    if (!gameId) {
+      return createResponse(todaysGames, response.status);
     }
-  }
 
-  return unique.slice(0, 2);
+    // gameIdで特定の試合を検索
+    const game = todaysGames.find(g => g.GameID === gameId || g.GameID == gameId);
+
+    if (game) {
+      return createResponse([game], response.status);
+    } else {
+      return createResponse([], 200);
+    }
+  } catch (error) {
+    console.error("live_games fetch failed", error);
+    return createResponse({ ok: false, error: error.message || String(error) }, 502);
+  }
 }
