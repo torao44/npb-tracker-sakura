@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<meta name="app-version" content="1.3.4">
+<meta name="app-version" content="1.3.5">
 <meta name="app-updated" content="2026-09-08">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%BE%3C/text%3E%3C/svg%3E">
 <title>NPB シーズントラッカー</title>
@@ -183,7 +183,7 @@ footer{max-width:1240px;margin:0 auto;padding:1.2rem var(--space) 2.5rem;color:v
   </section>
 </main>
 <footer>
-  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem"><span>このファイルはブラウザ内にデータを保存します。</span><span style="font-family:ui-monospace,monospace">v1.3.4 (2026-09-10)</span></div><div style="margin-top:.3rem">ページを閉じている間も確実に動収集するには、Cron対応のサーバーまたはCloudflare Worker等への配置が必要です。外部データ提供元の仕様変更・停止時は更新できない場合あります。
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem"><span>このファイルはブラウザ内にデータを保存します。</span><span style="font-family:ui-monospace,monospace">v1.3.5 (2026-09-10)</span></div><div style="margin-top:.3rem">ページを閉じている間も確実に動収集するには、Cron対応のサーバーまたはCloudflare Worker等への配置が必要です。外部データ提供元の仕様変更・停止時は更新できない場合あります。
   </div>
 </footer>
 
@@ -281,7 +281,7 @@ async function refreshAll(){
   else{showNotice('サーバー接続エラー','サーバーからの取得に失敗しました。設定タブでURLを確認してください。');return}
  }
  if($('#refreshBtn')){$('#refreshBtn').disabled=true;$('#refreshBtn').textContent='更新中…'}
- setStatus('更新中','warn');addLog(`v1.3.4 ${season}年度のデータ取得を開始`);
+ setStatus('更新中','warn');addLog(`v1.3.5 ${season}年度のデータ取得を開始`);
  let fullHistory=false,success=0;
  try{
   const [centralHist,pacificHist,schedules,starters]=await Promise.all([
@@ -504,16 +504,8 @@ async function refreshLiveScores(){
     const swappedHomeMatch=h===awayName||h.includes(awayName)||awayName.includes(h);
     const swappedAwayMatch=v===homeName||v.includes(homeName)||homeName.includes(v);
     const reverseMatch=swappedHomeMatch&&swappedAwayMatch;
-    let match=homeMatch&&awayMatch||reverseMatch;
-    // 同一カードでも日付が別（連戦の前日分など）なら誤マッチとして除外
-    if(match){
-     const liveDateRaw=String(val(l,['DateJPN','dateJPN','DATE_JPN','GameDate','gameDate','GAME_DATE'],'')||'').replace(/-/g,'');
-     if(liveDateRaw.length>=8&&liveDateRaw.slice(0,8)!==now.date.replace(/-/g,'')){
-      console.log(`[DEBUG] SKIP date-mismatch: ${h} vs ${v} liveDate=${liveDateRaw.slice(0,8)} today=${now.date}`);
-      match=false;
-     }
-    }
-    if(match)console.log(`[DEBUG] MATCH: ${h} vs ${v} -> ${homeName} vs ${awayName}`);
+    const match=homeMatch&&awayMatch||reverseMatch;
+    if(match)console.log(`[DEBUG] MATCH: ${h} vs ${v} -> ${homeName} vs ${awayName}`,l);
     return match;
    });
    if(!live){console.log(`[DEBUG] NO MATCH for ${homeName} vs ${awayName}`);return}
