@@ -1,8 +1,8 @@
 export async function onRequestGet(context) {
   try {
-    console.log('[YahooScore] Fetching from baseball.yahoo.co.jp/npb/');
+    console.log('[YahooScore] Fetching from baseball.yahoo.co.jp/npb/schedule/');
 
-    const response = await fetch('https://baseball.yahoo.co.jp/npb/', {
+    const response = await fetch('https://baseball.yahoo.co.jp/npb/schedule/', {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
@@ -26,7 +26,7 @@ export async function onRequestGet(context) {
     const html = await response.text();
     console.log('[YahooScore] HTML length:', html.length);
 
-    const games = parseYahooNpbHtml(html);
+    const games = parseYahooScheduleHtml(html);
     console.log('[YahooScore] Parsed games:', games.length);
 
     return new Response(JSON.stringify(games), {
@@ -59,16 +59,17 @@ const TEAM_INFO = {
   '日本ハム': { id: 8, league: 'pacific', full: '北海道日本ハムファイターズ' },
   'ロッテ': { id: 9, league: 'pacific', full: '千葉ロッテマリーンズ' },
   'オリックス': { id: 11, league: 'pacific', full: 'オリックス・バファローズ' },
-  'ソフトバンク': { id: 12, league: 'pacific', full: '福岡ソフトバンクホークス' },
+  'ソフトバク': { id: 12, league: 'pacific', full: '福岡ソフトバンクホークス' },
   '楽天': { id: 376, league: 'pacific', full: '東北楽天ゴールデンイーグルス' },
 };
 
 const TEAM_NAMES = Object.keys(TEAM_INFO);
+const EXCLUDED_TEAMS = ['オイシックス', 'ハヤテ', 'くふう'];
 
-function parseYahooNpbHtml(html) {
+function parseYahooScheduleHtml(html) {
   const games = [];
 
-  // タグ除去時に空白を挿入してチーム名の連結を防ぐ
+  // HTMLタグ除去
   let text = html
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ' ')
     .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, ' ')
@@ -82,20 +83,25 @@ function parseYahooNpbHtml(html) {
     .replace(/\s+/g, ' ')
     .replace(/\n+/g, '\n');
 
-  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-  console.log('[YahooScore] Text lines:', lines.length);
+  // 「本の試合」セクションだけ抽出（「本日の試合」より前の部分）
+  const todayMarker = '本日の試合';
+  const todayIdx = text.indexOf(todayMarker);
+  if (todayIdx !== -1) {
+    text = text.substring(0, todayIdx);
+  }
 
-  const scoreLines = lines.filter(l => /\d+\s*[-－]\s*\d+/.test(l));
-  console.log('[YahooScore] Score lines found:', scoreLines.length);
-  scoreLines.slice(0, 5).forEach((l, i) => console.log(`  [${i}] ${l.substring(0, 120)}`));
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  console.log('[YahooScore] Text lines (today section):', lines.length);
 
   for (const line of lines) {
+    // スコアパターン: "数字 - 数字"
     const scoreMatch = line.match(/(\d+)\s*[-－]\s*(\d+)/);
     if (!scoreMatch) continue;
 
     const rawScore1 = scoreMatch[1];
     const rawScore2 = scoreMatch[2];
 
+    // 状態判定
     let statusDetail = '';
     let isLive = false;
     let isFinal = false;
@@ -125,9 +131,19 @@ function parseYahooNpbHtml(html) {
 
     if (!statusDetail) continue;
 
+    // チーム名抽出（連結対応）
     const teams = extractTeamsFromLine(line);
     if (teams.length < 2) {
       console.log('[YahooScore] Could not extract 2 teams from:', line.substring(0, 100));
+      continue;
+    }
+
+    // 除外チーム（ファーム・独立リーグ）を含む場合はスキップ
+    const hasExcluded = teams.some(t =>
+      EXCLUDED_TEAMS.some(ex => t.includes(ex))
+    );
+    if (hasExcluded) {
+      console.log('[YahooScore] Excluded farm/indie game:', teams.join(' vs '));
       continue;
     }
 
@@ -160,17 +176,17 @@ function extractTeamsFromLine(line) {
   const matches = [];
 
   for (const name of TEAM_NAMES) {
-    const pattern = '(?:^|\\s|　|[(（）)])' + escapeRegex(name) + '(?:$|\\s|　|[(（）)])';
-    const regex = new RegExp(pattern, 'g');
-    let match;
-    while ((match = regex.exec(line)) !== null) {
-      matches.push({ name, index: match.index });
+    let idx = line.indexOf(name);
+    while (idx !== -1) {
+      matches.push({ name, index: idx });
+      idx = line.indexOf(name, idx + 1);
     }
   }
 
   // 出現位置順にソート
   matches.sort((a, b) => a.index - b.index);
 
+  // 重複除去（同じ名前が複数回出てくる場合は最初の1つだけ）
   const unique = [];
   const seen = new Set();
   for (const m of matches) {
@@ -181,8 +197,4 @@ function extractTeamsFromLine(line) {
   }
 
   return unique.slice(0, 2);
-}
-
-function escapeRegex(str) {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

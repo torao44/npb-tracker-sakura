@@ -95,7 +95,7 @@ header h1{ font-size:1.4rem; color:var(--primary); }
 </div>
 
 <script>
-const VERSION='2.0.0';
+const VERSION='2.0.2';
 const APP_UPDATED='2026-09-10';
 const TEAM_MAP={
   1:{name:'巨人',league:'central',color:'#ff7334'},2:{name:'ヤクルト',league:'central',color:'#1a5c3d'},
@@ -162,6 +162,8 @@ async function refreshLiveScores(){
 function mergeScheduleGames(schedule,liveGames){
   const liveFields=['homeScore','awayScore','inning','inningSide','isLive','isFinal','isCancelled','statusDetail'];
   const map=new Map(schedule.map(g=>[g.gameKey,g]));
+  // 逆順のキーも登録
+  schedule.forEach(g=>{ map.set(g.team2+'-'+g.team1,g); });
 
   liveGames.forEach(lg=>{
     const homeId=TEAM_NAME_TO_ID[lg.homeTeam];
@@ -172,20 +174,14 @@ function mergeScheduleGames(schedule,liveGames){
     const key2=homeId+'-'+awayId;
     let g=map.get(key1)||map.get(key2);
 
-    if(!g){
-      const today=new Date();
-      const dateStr=today.getFullYear()+'-'+('0'+(today.getMonth()+1)).slice(-2)+'-'+('0'+today.getDate()).slice(-2);
-      const ht=TEAM_MAP[homeId], at=TEAM_MAP[awayId];
-      g={gameKey:key1,gameDate:dateStr,team1:awayId,team2:homeId,team1Name:at.name,team2Name:ht.name,league:ht.league,homeScore:null,awayScore:null,inning:null,inningSide:null,isLive:false,isFinal:false,isCancelled:false,statusDetail:'',startTime:'18:00'};
-      map.set(key1,g);
-    }
+    if(!g){ console.log('[Front] No matching schedule for:',lg.awayTeam,'vs',lg.homeTeam); return; }
 
     liveFields.forEach(f=>{
       if(lg[f]!==undefined&&lg[f]!==null) g[f]=lg[f];
     });
   });
 
-  return Array.from(map.values());
+  return Array.from(new Map(schedule.map(g=>[g.gameKey,g])).values());
 }
 
 function renderUpcoming(){
