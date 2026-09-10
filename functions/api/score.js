@@ -12,7 +12,9 @@ export async function onRequest(context) {
       method: "GET",
       headers: {
         "Accept": "application/json",
-        "User-Agent": "NPB-Season-Tracker/1.3.3"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Referer": "https://spaia.jp/baseball/npb",
+        "Origin": "https://spaia.jp"
       },
       cf: {
         cacheEverything: true,
@@ -20,10 +22,22 @@ export async function onRequest(context) {
       }
     });
 
-    const allGames = await response.json();
+    const rawText = await response.text();
+    let allGames;
+    try {
+      allGames = JSON.parse(rawText);
+    } catch (parseErr) {
+      return createResponse(
+        { ok: false, error: "JSON parse failed", upstreamStatus: response.status, rawPreview: rawText.slice(0, 300) },
+        502
+      );
+    }
 
     if (!Array.isArray(allGames)) {
-      return createResponse({ ok: false, error: "Invalid response from upstream" }, 502);
+      return createResponse(
+        { ok: false, error: "Invalid response from upstream", upstreamStatus: response.status, rawPreview: JSON.stringify(allGames).slice(0, 300) },
+        502
+      );
     }
 
     // 当日（JST）の日付文字列を生成 (YYYYMMDD)
@@ -58,7 +72,11 @@ export async function onRequest(context) {
     });
 
     if (!gameId) {
-      return createResponse(todaysGames, response.status);
+      return createResponse(todaysGames, response.status, {
+        "X-Raw-Count": String(allGames.length),
+        "X-Today-Count": String(todaysGames.length),
+        "X-Upstream-Status": String(response.status)
+      });
     }
 
     // gameIdで特定の試合を検索
