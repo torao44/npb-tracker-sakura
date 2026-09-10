@@ -12,7 +12,7 @@ export async function onRequest(context) {
       method: "GET",
       headers: {
         "Accept": "application/json",
-        "User-Agent": "NPB-Season-Tracker/1.3.2"
+        "User-Agent": "NPB-Season-Tracker/1.3.3"
       },
       cf: {
         cacheEverything: true,
@@ -26,33 +26,35 @@ export async function onRequest(context) {
       return createResponse({ ok: false, error: "Invalid response from upstream" }, 502);
     }
 
-    // 当日（JST）の試合だけをフィルタリング
+    // 当日（JST）の日付文字列を生成 (YYYYMMDD)
     const now = new Date();
     const jstDate = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Tokyo" }));
     const year = jstDate.getFullYear();
     const month = String(jstDate.getMonth() + 1).padStart(2, "0");
     const day = String(jstDate.getDate()).padStart(2, "0");
-    const todayStr = `${year}${month}${day}`; // 例: "20260910"
+    const todayStr = `${year}${month}${day}`;
 
     const todaysGames = allGames.filter(g => {
-      // GameIDの先頭8文字が日付 (例: 20260910...)
+      // 1. GameIDの先頭8文字が日付 (例: 2026091012345)
       const gameIdStr = String(g.GameID || "");
-      if (gameIdStr.length >= 8) {
-        const gameDate = gameIdStr.substring(0, 8);
-        return gameDate === todayStr;
+      if (gameIdStr.length >= 8 && /^\d{8}/.test(gameIdStr)) {
+        return gameIdStr.substring(0, 8) === todayStr;
       }
-      // DateJPNフィールドがある場合
-      const dateJpn = String(g.DateJPN || g.dateJPN || g.DATE_JPN || "");
+
+      // 2. DateJPNフィールド (例: "2026-09-10" または "20260910")
+      const dateJpn = String(g.DateJPN || g.dateJPN || g.DATE_JPN || "").replace(/-/g, "");
       if (dateJpn.length >= 8) {
         return dateJpn.substring(0, 8) === todayStr;
       }
-      // gameDateフィールド
-      const gameDateField = String(g.gameDate || g.GAME_DATE || "");
-      if (gameDateField) {
-        const normalized = gameDateField.replace(/-/g, "").substring(0, 8);
-        return normalized === todayStr;
+
+      // 3. gameDateフィールド (例: "2026-09-10" または "20260910")
+      const gameDateField = String(g.gameDate || g.GAME_DATE || "").replace(/-/g, "");
+      if (gameDateField.length >= 8) {
+        return gameDateField.substring(0, 8) === todayStr;
       }
-      return false;
+
+      // 4. 日付情報がない場合は含める（フィルタリングしない）
+      return true;
     });
 
     if (!gameId) {
