@@ -1,20 +1,66 @@
 import { createResponse } from "../_lib/proxy.js";
 
+// SPAIAのlive_games APIは「試合終了後に確定した結果」しか記録されておらず、
+// 試合中のリアルタイムスコアを取得できないことが判明したため、
+// Yahoo!スポーツナビ プロ野球トップページ（試合中の得点・回表裏を掲載）を
+// サーバー側でスクレイピングする方式に切り替えた。
+const UPSTREAM_URL = "https://baseball.yahoo.co.jp/npb/";
+
+const TEAM_ORDER = [
+  "ソフトバンク", "日本ハム", "オリックス", "楽天", "西武", "ロッテ",
+  "阪神", "広島", "DeNA", "ヤクルト", "巨人", "中日"
+];
+
+function stripTags(html) {
+  return html
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function parseGameBlock(text) {
+  const positions = TEAM_ORDER
+    .map(name => ({ name, idx: text.indexOf(name) }))
+    .filter(t => t.idx >= 0)
+    .sort((a, b) => a.idx - b.idx);
+
+  if (positions.length < 2) return null;
+
+  const homeName = positions[0].name;
+  const awayName = positions[1].name;
+
+  const scoreMatch = text.match(/(\d+)\s*-\s*(\d+)/);
+  const inningMatch = text.match(/(\d+)\s*回\s*(表|裏)/);
+  const isFinal = text.includes("試合終了");
+  const isCancelled = text.includes("中止") || text.includes("ノーゲーム");
+
+  let gameStateName = "";
+  if (isFinal) gameStateName = "試合終了";
+  else if (isCancelled) gameStateName = "試合中止";
+
+  return {
+    H_Score_NameS: homeName,
+    V_Score_NameS: awayName,
+    H_Score_R: scoreMatch ? Number(scoreMatch[1]) : null,
+    V_Score_R: scoreMatch ? Number(scoreMatch[2]) : null,
+    Inning: inningMatch ? Number(inningMatch[1]) : null,
+    TB: inningMatch ? inningMatch[2] : "",
+    GameStateName: gameStateName,
+    _rawText: text
+  };
+}
+
 export async function onRequest(context) {
   const requestUrl = new URL(context.request.url);
-  const gameId = requestUrl.searchParams.get("gameId");
-
-  // SPAIA live_games APIから全試合データを取得
-  const upstreamUrl = "https://spaia.jp/baseball/npb/api/live_games";
 
   try {
-    const response = await fetch(upstreamUrl, {
+    const response = await fetch(UPSTREAM_URL, {
       method: "GET",
       headers: {
-        "Accept": "application/json",
+        "Accept": "text/html",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-        "Referer": "https://spaia.jp/baseball/npb",
-        "Origin": "https://spaia.jp"
+        "Accept-Language": "ja-JP,ja;q=0.9"
       },
       cf: {
         cacheEverything: true,
@@ -22,88 +68,38 @@ export async function onRequest(context) {
       }
     });
 
-    const rawText = await response.text();
-    let allGames;
-    try {
-      allGames = JSON.parse(rawText);
-    } catch (parseErr) {
-      return createResponse(
-        { ok: false, error: "JSON parse failed", upstreamStatus: response.status, rawPreview: rawText.slice(0, 300) },
-        502
-      );
+    const html = await response.text();
+
+    const gameRegex = /href="\/npb\/game\/(\d+)\/index"[^>]*>([\s\S]*?)<\/a>/g;
+    const games = [];
+    let m;
+    while ((m = gameRegex.exec(html)) !== null) {
+      const gameId = m[1];
+      const text = stripTags(m[2]);
+      const parsed = parseGameBlock(text);
+      if (parsed) games.push({ GameID: gameId, ...parsed });
     }
-
-    if (!Array.isArray(allGames)) {
-      return createResponse(
-        { ok: false, error: "Invalid response from upstream", upstreamStatus: response.status, rawPreview: JSON.stringify(allGames).slice(0, 300) },
-        502
-      );
-    }
-
-    // 当日（JST）の日付文字列を生成 (YYYYMMDD)
-    const now = new Date();
-    const jstDate = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Tokyo" }));
-    const year = jstDate.getFullYear();
-    const month = String(jstDate.getMonth() + 1).padStart(2, "0");
-    const day = String(jstDate.getDate()).padStart(2, "0");
-    const todayStr = `${year}${month}${day}`;
-
-    const todaysGames = allGames.filter(g => {
-      // 1. GameIDの先頭8文字が日付 (例: 2026091012345)
-      const gameIdStr = String(g.GameID || "");
-      if (gameIdStr.length >= 8 && /^\d{8}/.test(gameIdStr)) {
-        return gameIdStr.substring(0, 8) === todayStr;
-      }
-
-      // 2. DateJPNフィールド (例: "2026-09-10" または "20260910")
-      const dateJpn = String(g.DateJPN || g.dateJPN || g.DATE_JPN || "").replace(/-/g, "");
-      if (dateJpn.length >= 8) {
-        return dateJpn.substring(0, 8) === todayStr;
-      }
-
-      // 3. gameDateフィールド (例: "2026-09-10" または "20260910")
-      const gameDateField = String(g.gameDate || g.GAME_DATE || "").replace(/-/g, "");
-      if (gameDateField.length >= 8) {
-        return gameDateField.substring(0, 8) === todayStr;
-      }
-
-      // 4. 日付情報がない場合は含める（フィルタリングしない）
-      return true;
-    });
 
     if (requestUrl.searchParams.get("debug") === "1") {
-      const live = allGames.find(g => JSON.stringify(g).includes("進行中")) || null;
-      const withGiants = allGames.find(g => JSON.stringify(g).includes("巨人")) || null;
       return createResponse(
         {
-          rawCount: allGames.length,
-          todayStr,
-          first3: allGames.slice(0, 3),
-          liveSample: live,
-          giantsSample: withGiants
+          upstreamStatus: response.status,
+          htmlLength: html.length,
+          gamesFound: games.length,
+          games
         },
         200
       );
     }
 
-    if (!gameId) {
-      return createResponse(todaysGames, response.status, {
-        "X-Raw-Count": String(allGames.length),
-        "X-Today-Count": String(todaysGames.length),
-        "X-Upstream-Status": String(response.status)
-      });
-    }
+    const cleaned = games.map(({ _rawText, ...rest }) => rest);
 
-    // gameIdで特定の試合を検索
-    const game = todaysGames.find(g => g.GameID === gameId || g.GameID == gameId);
-
-    if (game) {
-      return createResponse([game], response.status);
-    } else {
-      return createResponse([], 200);
-    }
+    return createResponse(cleaned, response.status, {
+      "X-Raw-Count": String(games.length),
+      "X-Upstream-Status": String(response.status)
+    });
   } catch (error) {
-    console.error("live_games fetch failed", error);
+    console.error("yahoo scrape failed", error);
     return createResponse({ ok: false, error: error.message || String(error) }, 502);
   }
 }
