@@ -81,12 +81,17 @@ export async function onRequest(context) {
     }
 
     if (requestUrl.searchParams.get("debug") === "1") {
+      const idx = html.indexOf("ソフトバンク");
+      const rawSnippet = idx >= 0 ? html.slice(Math.max(0, idx - 800), idx + 800) : null;
+      const anyGameLink = html.match(/href="[^"]*\/game\/[^"]*"/) || null;
       return createResponse(
         {
           upstreamStatus: response.status,
           htmlLength: html.length,
-          gamesFound: games.length,
-          games
+          gamesFoundOldRegex: games.length,
+          softbankIndex: idx,
+          rawSnippetAroundSoftbank: rawSnippet,
+          sampleGameLinkTag: anyGameLink ? anyGameLink[0] : null
         },
         200
       );
