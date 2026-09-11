@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<meta name="app-version" content="1.5.0">
+<meta name="app-version" content="1.5.1">
 <meta name="app-updated" content="2026-09-08">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%BE%3C/text%3E%3C/svg%3E">
 <title>NPB シーズントラッカー</title>
@@ -43,6 +43,8 @@ h1{font-family:"Barlow Condensed","Noto Sans JP",sans-serif;font-size:var(--s3);
 .team-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:.45rem;box-shadow:0 0 0 1px rgba(0,0,0,.12)}
 .matrix{min-width:740px;border-collapse:separate;border-spacing:4px;width:100%;font-size:.82rem}.matrix th{font-weight:700;padding:.55rem}.matrix thead th{color:var(--muted)}.matrix tbody th{text-align:left;white-space:nowrap}.matrix td{text-align:center;border-radius:8px;padding:.65rem .35rem;background:var(--surface-2);border:1px solid transparent;cursor:pointer;white-space:nowrap}.matrix td:hover{border-color:var(--blue)}.matrix td.win{background:#e4f3e9;color:#155b38}.matrix td.loss{background:#f9e6e9;color:#8b2635}.matrix td.even{background:#edf0f3;color:#495563}.matrix td.diag{background:repeating-linear-gradient(45deg,#f3f4f2,#f3f4f2 5px,#e8ebe8 5px,#e8ebe8 10px);color:#8a928d;cursor:default}.matrix-wrap{overflow:auto}.matrix-help{margin-top:.8rem;color:var(--muted);font-size:.82rem}
 .game-card{display:grid;grid-template-columns:minmax(4.8rem,.65fr) minmax(13rem,1.55fr) minmax(10rem,1fr) auto;align-items:center;gap:1rem;padding:1rem;border:1px solid var(--line);border-radius:12px;margin-bottom:.7rem;background:var(--surface);transition:.18s}
+.game-card.game-card-link{color:inherit;text-decoration:none;cursor:pointer}
+.game-card.game-card-link:hover{border-color:var(--blue);transform:translateY(-1px);box-shadow:0 2px 8px rgba(0,0,0,.06)}
 .game-card:hover{border-color:var(--blue);transform:translateY(-1px)}
 .game-card.is-live{border-color:#8cc5a5;background:linear-gradient(90deg,#f1fbf5 0,var(--surface) 42%);box-shadow:inset 4px 0 0 var(--ok)}
 .game-time{min-width:0;text-align:center}
@@ -183,7 +185,7 @@ footer{max-width:1240px;margin:0 auto;padding:1.2rem var(--space) 2.5rem;color:v
   </section>
 </main>
 <footer>
-  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem"><span>このファイルはブラウザ内にデータを保存します。</span><span style="font-family:ui-monospace,monospace">v1.5.0 (2026-09-10)</span></div><div style="margin-top:.3rem">ページを閉じている間も確実に動収集するには、Cron対応のサーバーまたはCloudflare Worker等への配置が必要です。外部データ提供元の仕様変更・停止時は更新できない場合あります。
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem"><span>このファイルはブラウザ内にデータを保存します。</span><span style="font-family:ui-monospace,monospace">v1.5.1 (2026-09-10)</span></div><div style="margin-top:.3rem">ページを閉じている間も確実に動収集するには、Cron対応のサーバーまたはCloudflare Worker等への配置が必要です。外部データ提供元の仕様変更・停止時は更新できない場合あります。
   </div>
 </footer>
 
@@ -281,7 +283,7 @@ async function refreshAll(){
   else{showNotice('サーバー接続エラー','サーバーからの取得に失敗しました。設定タブでURLを確認してください。');return}
  }
  if($('#refreshBtn')){$('#refreshBtn').disabled=true;$('#refreshBtn').textContent='更新中…'}
- setStatus('更新中','warn');addLog(`v1.5.0 ${season}年度のデータ取得を開始`);
+ setStatus('更新中','warn');addLog(`v1.5.1 ${season}年度のデータ取得を開始`);
  let fullHistory=false,success=0;
  try{
   const [centralHist,pacificHist,schedules,starters]=await Promise.all([
@@ -443,7 +445,7 @@ function mergeScheduleGames(oldGames,newGames){
  return (newGames||[]).map(g=>{
   const old=oldMap.get(gameKey(g));if(!old)return g;
   // ライブ状態関連フィールドは新しいデータを優先（古いisFinalで上書きされないように）
-  const liveFields=['isFinal','isLive','isCancelled','statusDetail','inning','inningSide','validInning','homeScore','awayScore','scoreUpdatedAt'];
+  const liveFields=['isFinal','isLive','isCancelled','statusDetail','inning','inningSide','validInning','homeScore','awayScore','scoreUpdatedAt','yahooGameId'];
   const merged={...old,...g,homePitcher:g.homePitcher||old.homePitcher||'',awayPitcher:g.awayPitcher||old.awayPitcher||'',pitcherSource:old.pitcherSource||g.pitcherSource||''};
   for(const f of liveFields){if(g[f]!==undefined&&g[f]!==null)merged[f]=g[f]}
   return merged;
@@ -535,6 +537,8 @@ async function refreshLiveScores(){
      g.statusDetail='試合中';
     }
    }
+   const yahooId=val(live,['GameID'],'');
+   if(yahooId)g.yahooGameId=String(yahooId);
    g.scoreUpdatedAt=new Date().toISOString();
    console.log(`[DEBUG] Updated ${homeName}vs${awayName}: isFinal=${g.isFinal} isLive=${g.isLive} status=${g.statusDetail}`);
   });
@@ -763,7 +767,10 @@ function renderUpcoming(){
    const sourceLabel=g.pitcherSource?`<span class="game-source">${escapeHtml(g.pitcherSource)}</span>`:'';
    const pitcherDisplay=(awayP||homeP)?`<span class="game-pitcher">予告先発: ${escapeHtml(awayP||'未定')} vs ${escapeHtml(homeP||'未定')}</span>${sourceLabel}`:'';
    const updated=(g.isLive||g.isFinal)&&g.scoreUpdatedAt?`<span class="game-updated">状況更新 ${escapeHtml(formatJstTime(g.scoreUpdatedAt))}</span>`:'';
-   htmlOut+=`<div class="game-card${g.isLive?' is-live':''}">
+   const yahooUrl=g.yahooGameId?`https://baseball.yahoo.co.jp/npb/game/${encodeURIComponent(g.yahooGameId)}/score`:'';
+   const cardTag=yahooUrl?'a':'div';
+   const cardLinkAttrs=yahooUrl?` href="${escapeHtml(yahooUrl)}" target="_blank" rel="noopener noreferrer"`:'';
+   htmlOut+=`<${cardTag} class="game-card${g.isLive?' is-live':''}${yahooUrl?' game-card-link':''}"${cardLinkAttrs}>
     <div class="game-time"><div class="date">${escapeHtml(g.time||'未定')}</div><div class="time">${statusText}</div></div>
     <div class="game-match" aria-label="${escapeHtml(`${awayTeam.name} ${hasScore?g.awayScore:''} 対 ${homeTeam.name} ${hasScore?g.homeScore:''}`)}">
      <div class="game-team-row"><span class="game-team"><span class="team-dot" style="background:${awayTeam.color}"></span>${awayTeam.name}</span><strong class="game-score${scoreClass}">${awayScore}</strong></div>
@@ -772,7 +779,7 @@ function renderUpcoming(){
     </div>
     <div class="game-info">${stadiumDisplay}${stadiumDisplay&&pitcherDisplay?'<br>':''}${pitcherDisplay}${updated}</div>
     <span class="game-status ${statusClass}">${statusText}</span>
-   </div>`;
+   </${cardTag}>`;
   }
   container.innerHTML=htmlOut;scheduleLiveRefresh();
  }catch(e){console.error('renderUpcoming error:',e)}
